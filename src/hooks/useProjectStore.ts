@@ -13,17 +13,14 @@ export function toProject(project: ProjectRecord): Project {
     name: project.name,
     code: project.code,
     organization: project.organization,
-    status: project.status as Project["status"],
+    status: project.status === "Active" ? "Active" : "Inactive",
     manager: project.manager,
     managerInitials: project.managerInitials,
     progress: Number(project.progress ?? 0),
     openTickets: Number(project.openTickets ?? 0),
     totalTickets: Number(project.totalTickets ?? 0),
-    slaHealth: Number(project.slaHealth ?? 100),
-    category: project.category,
     started: project.started,
     deadline: project.deadline,
-    slaHours: project.slaHours ?? { Critical: 8, High: 24, Normal: 48, Low: 96 },
   };
 }
 
@@ -36,28 +33,24 @@ export function getProjects(): Project[] {
   return [];
 }
 
-export async function addProject(project: Partial<Project> & { slaHours?: Record<string, number> }) {
+export async function addProject(project: Partial<Project>) {
   return api.upsertProject({
     name: project.name,
     organization: project.organization,
     status: project.status ?? "Active",
-    category: project.category,
     manager: project.manager,
     code: project.code,
-    slaHours: project.slaHours,
   });
 }
 
-export async function updateProject(id: string, patch: Partial<Project> & { slaHours?: Record<string, number> }) {
+export async function updateProject(id: string, patch: Partial<Project>) {
   return api.upsertProject({
     id,
     name: patch.name,
     organization: patch.organization,
     status: patch.status,
-    category: patch.category,
     manager: patch.manager,
     code: patch.code,
-    slaHours: patch.slaHours,
   });
 }
 

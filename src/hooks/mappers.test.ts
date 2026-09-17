@@ -12,8 +12,6 @@ describe("ticket and project mappers", () => {
       title: "Portal login delay",
       project: "OneServe",
       status: "New",
-      dueInSeconds: 120,
-      windowSeconds: 4800,
     });
   });
 
@@ -59,9 +57,8 @@ describe("ticket and project mappers", () => {
       ],
     });
     expect(toClientRequest(ticket)).toMatchObject({
-      requestType: "Bug",
-      waitingOnMe: true,
       project: "OneServe",
+      status: "New",
     });
     const detail = toClientDetail(ticket);
     expect(detail.assignedTeam).toBe("Siyana Support Team");

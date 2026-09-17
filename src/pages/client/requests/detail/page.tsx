@@ -1,8 +1,7 @@
 /**
- * Single government request: conversation, files, verify / request-changes.
+ * Single government request: comments, files, reject with a mandatory reason.
  *
- * Verify is allowed when status is Resolved. Request-changes sends work back.
- * Raise Similar Request currently does not prefill the create form.
+ * Resolved is terminal. Reject is available until the ticket is Resolved or Rejected.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -11,7 +10,7 @@ import Card from "@/components/base/Card";
 import Tabs from "@/components/base/Tabs";
 import Button from "@/components/base/Button";
 import EmptyState from "@/components/base/EmptyState";
-import { TicketStatusBadge, PriorityBadge, SlaBadge } from "@/components/base/StatusBadge";
+import { TicketStatusBadge, PriorityBadge } from "@/components/base/StatusBadge";
 import NotesPanel, { type NoteEntry } from "@/components/feature/NotesPanel";
 import TicketAttachments from "@/components/feature/TicketAttachments";
 import TimelinePanel from "@/pages/console/tickets/components/TimelinePanel";
@@ -22,6 +21,7 @@ import { toClientDetail, toClientRequest } from "@/hooks/useClientRequestStore";
 import { api } from "@/services/api";
 import { formatDisplayDate } from "@/utils/date";
 import type { TicketRecord } from "@/types/oneserve";
+import { rejectionFromEvents } from "@/utils/ticketStats";
 
 export default function ClientRequestDetailPage() {
   const params = useParams();
@@ -33,8 +33,10 @@ export default function ClientRequestDetailPage() {
   const [tab, setTab] = useState("details");
   const [draft, setDraft] = useState("");
   const [banner, setBanner] = useState("");
-  const [changeNote, setChangeNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
 
   const request = useMemo(() => {
     const ticket = live ?? tickets.find((item) => item.id === id);
@@ -122,40 +124,29 @@ export default function ClientRequestDetailPage() {
     }
   }
 
-  async function handleVerify() {
+  async function confirmReject() {
+    if (!reason.trim()) {
+      setRejectError("A rejection reason is mandatory.");
+      return;
+    }
     setSaving(true);
     try {
-      const ticket = await api.verifyTicket(id);
+      const ticket = await api.rejectTicket(id, reason.trim());
       setLive(ticket);
       replaceTicket(ticket);
-      flash("Work verified — this request is now Closed.");
+      setRejectOpen(false);
+      setReason("");
+      setRejectError("");
+      flash("Request rejected. The Siyana team has been notified.");
       await refresh();
     } catch (err) {
-      flash(err instanceof Error ? err.message : "Unable to verify this request.");
+      flash(err instanceof Error ? err.message : "Unable to reject this request.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleRequestChanges() {
-    if (!changeNote.trim()) {
-      flash("Please describe the changes you need.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const ticket = await api.requestChanges(id, changeNote.trim());
-      setLive(ticket);
-      replaceTicket(ticket);
-      setChangeNote("");
-      flash("Changes requested — the ticket is back In Progress.");
-      await refresh();
-    } catch (err) {
-      flash(err instanceof Error ? err.message : "Unable to request changes.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const closed = request.status === "Resolved" || request.status === "Rejected" || request.status === "Closed";
 
   return (
     <ClientLayout>
@@ -176,7 +167,6 @@ export default function ClientRequestDetailPage() {
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <TicketStatusBadge status={request.status} />
           <PriorityBadge priority={request.priority} />
-          <SlaBadge sla={request.sla} />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-background-200 bg-background-100 px-2.5 py-0.5 text-xs text-foreground-600">
             <i className="ri-folders-line text-[13px] leading-none"></i>
             {request.project}
@@ -189,26 +179,19 @@ export default function ClientRequestDetailPage() {
           <TicketInfoPanel
             project={request.project}
             organization={live?.organization || user?.organization || ""}
-            category={request.category}
             status={request.status}
             priority={request.priority}
             created={formatDisplayDate(request.created)}
-            sla={request.sla}
-            slaDue={detail.slaDue}
             team={detail.assignedTeam}
             assignee={detail.assignee}
             assigneeInitials={detail.assigneeInitials}
             assigneeRole={detail.assignedTeam}
             requester={{ name: live?.requester || user?.full_name || "Requester", role: live?.requester_role || user?.role || "Requester" }}
-            approver={
-              request.approvedBy
-                ? {
-                    name: request.approvedBy,
-                    role: request.approvedByRole ?? "Approver",
-                    at: request.approvedAt ?? "",
-                  }
-                : undefined
-            }
+            rejection={rejectionFromEvents(request.status, live?.events, request.updated, {
+              reason: live?.rejection_reason,
+              by: live?.rejected_by,
+              at: live?.rejected_at ? formatDisplayDate(live.rejected_at) : request.updated,
+            })}
           />
         </div>
 
@@ -219,7 +202,7 @@ export default function ClientRequestDetailPage() {
               onChange={setTab}
               items={[
                 { key: "details", label: "Details", icon: "ri-file-text-line" },
-                { key: "notes", label: "Notes", count: notes.length, icon: "ri-sticky-note-line" },
+                { key: "notes", label: "Comments", count: notes.length, icon: "ri-chat-3-line" },
                 { key: "history", label: "History", count: detail.events.length, icon: "ri-history-line" },
               ]}
             />
@@ -233,6 +216,23 @@ export default function ClientRequestDetailPage() {
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-foreground-700">{detail.description}</p>
               </div>
+
+              {detail.referenceLink ? (
+                <div>
+                  <p className="text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
+                    Reference Link
+                  </p>
+                  <a
+                    href={detail.referenceLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:text-primary-800 cursor-pointer break-all"
+                  >
+                    <i className="ri-link text-[14px] leading-none"></i>
+                    {detail.referenceLink}
+                  </a>
+                </div>
+              ) : null}
 
               <div>
                 <p className="text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
@@ -269,10 +269,24 @@ export default function ClientRequestDetailPage() {
                 className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-background-300 bg-background-50 px-3 text-xs font-label font-medium text-foreground-800 hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
               >
                 <span className="w-4 h-4 flex items-center justify-center">
-                  <i className="ri-sticky-note-line text-[14px] leading-none"></i>
+                  <i className="ri-chat-3-line text-[14px] leading-none"></i>
                 </span>
-                Add a Note
+                Add Comment
               </button>
+              {!closed ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRejectOpen(true);
+                    setReason("");
+                    setRejectError("");
+                  }}
+                  className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[oklch(var(--status-danger)/0.4)] bg-[oklch(var(--status-danger)/0.08)] px-3 text-xs font-label font-medium text-[oklch(var(--status-danger))] hover:bg-[oklch(var(--status-danger)/0.14)] transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-close-circle-line text-[14px] leading-none"></i>
+                  Reject Ticket
+                </button>
+              ) : null}
               <Link
                 to="/client/create"
                 className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-primary-600 bg-primary-600 px-3 text-xs font-label font-medium text-background-50 hover:bg-primary-700 transition-colors cursor-pointer whitespace-nowrap"
@@ -283,25 +297,43 @@ export default function ClientRequestDetailPage() {
             </div>
           </section>
 
-          {request.status === "Resolved" ? (
-            <section className="rounded-lg border border-accent-200 bg-accent-50 p-4">
-              <h3 className="font-heading text-sm font-semibold text-foreground-950">Verify completed work</h3>
-              <p className="mt-1 text-[11px] leading-relaxed text-foreground-600">
-                Siyana has marked this request as Resolved. Confirm the delivery to close it, or send it back with the changes you still need.
-              </p>
-              <div className="mt-3 flex flex-col gap-2">
-                <Button variant="primary" icon="ri-checkbox-circle-line" onClick={() => void handleVerify()} disabled={saving}>
-                  Verify & Close
+          {rejectOpen ? (
+            <section className="rounded-lg border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.05)] p-4">
+              <label htmlFor="client-reject" className="block text-xs font-label font-semibold text-foreground-800">
+                Reason for rejection <span className="text-[oklch(var(--status-danger))]">*</span>
+              </label>
+              <textarea
+                id="client-reject"
+                value={reason}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                  setRejectError("");
+                }}
+                rows={3}
+                maxLength={300}
+                placeholder="e.g. Requirement no longer required, wrong request created…"
+                className="mt-1.5 w-full resize-none rounded-md border border-background-300 bg-background-50 px-3 py-2 text-sm text-foreground-900 placeholder:text-foreground-400 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+              />
+              {rejectError ? (
+                <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-[oklch(var(--status-danger))]">
+                  <i className="ri-error-warning-line text-[13px] leading-none mt-0.5"></i>
+                  {rejectError}
+                </p>
+              ) : null}
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setRejectOpen(false);
+                    setReason("");
+                    setRejectError("");
+                  }}
+                >
+                  Cancel
                 </Button>
-                <textarea
-                  value={changeNote}
-                  onChange={(event) => setChangeNote(event.target.value)}
-                  rows={3}
-                  placeholder="Describe the changes you still need…"
-                  className="w-full resize-none rounded-md border border-background-300 bg-background-50 px-3 py-2 text-sm text-foreground-900 placeholder:text-foreground-400 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                />
-                <Button variant="outline" icon="ri-arrow-go-back-line" onClick={() => void handleRequestChanges()} disabled={saving}>
-                  Request Changes
+                <Button variant="danger" size="sm" icon="ri-close-line" onClick={() => void confirmReject()} disabled={saving}>
+                  Confirm Reject
                 </Button>
               </div>
             </section>

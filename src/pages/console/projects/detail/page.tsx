@@ -1,5 +1,5 @@
 /**
- * Project overview, tickets, team, SLA hours.
+ * Project overview, tickets, team, documents.
  * Documents tab is still mock data — not Azure storage.
  */
 import { useMemo, useState } from "react";
@@ -14,8 +14,6 @@ import EmptyState from "@/components/base/EmptyState";
 import StatCard from "@/pages/console/components/StatCard";
 import { StatusBadge, PriorityBadge, TicketStatusBadge, type Tone } from "@/components/base/StatusBadge";
 import {
-  slaPriorityOptions,
-  defaultSlaHours,
   defaultProjectDocuments,
   defaultProjectTeam,
   type Project,
@@ -30,10 +28,7 @@ const HEAD = "px-4 py-2.5 text-left text-[11px] font-label font-semibold upperca
 
 const STATUS_TONE: Record<string, Tone> = {
   Active: "success",
-  "On Hold": "warning",
   Inactive: "neutral",
-  Closing: "primary",
-  Completed: "neutral",
 };
 
 const FILE_ICON: Record<string, string> = {
@@ -112,7 +107,12 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const openTickets = projectTickets.filter((ticket) => ticket.status !== "Resolved").length;
+  const openTickets = projectTickets.filter(
+    (ticket) => ticket.status !== "Resolved" && ticket.status !== "Rejected" && ticket.status !== "Closed",
+  ).length;
+  const resolvedTickets = projectTickets.filter(
+    (ticket) => ticket.status === "Resolved" || ticket.status === "Closed",
+  ).length;
 
   async function handleEdit(values: ProjectFormValues) {
     try {
@@ -120,10 +120,8 @@ export default function ProjectDetailPage() {
         name: values.name,
         organization: values.organization,
         status: values.status as Project["status"],
-        category: values.category,
         manager: values.manager,
         managerInitials: initialsOf(values.manager),
-        slaHours: values.slaHours,
       });
       await refresh();
       setEditOpen(false);
@@ -152,10 +150,6 @@ export default function ProjectDetailPage() {
               <i className="ri-building-2-line text-[13px] leading-none"></i>
               {project.organization}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-background-200 bg-background-100 px-2.5 py-0.5 text-xs text-foreground-600">
-              <i className="ri-apps-2-line text-[13px] leading-none"></i>
-              {project.category}
-            </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -175,7 +169,7 @@ export default function ProjectDetailPage() {
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard label="Open Tickets" value={String(openTickets)} delta="Currently being worked on" tone="warning" icon="ri-ticket-2-line" />
         <StatCard label="Total Tickets" value={String(projectTickets.length || project.totalTickets)} delta="Raised since project start" tone="primary" icon="ri-inbox-archive-line" />
-        <StatCard label="SLA Health" value={`${project.slaHealth}%`} delta="Tickets met within target" tone="accent" icon="ri-shield-check-line" />
+        <StatCard label="Resolved Tickets" value={String(resolvedTickets)} delta="Completed requests" tone="accent" icon="ri-checkbox-circle-line" />
         <StatCard label="Delivery Progress" value={`${project.progress}%`} delta="Overall completion" tone="info" icon="ri-line-chart-line" />
       </div>
 
@@ -188,7 +182,6 @@ export default function ProjectDetailPage() {
             <InfoRow label="Status">
               <StatusBadge label={project.status} tone={STATUS_TONE[project.status] ?? "neutral"} />
             </InfoRow>
-            <InfoRow label="Primary category">{project.category}</InfoRow>
             <InfoRow label="Started">{project.started}</InfoRow>
             <InfoRow label="Target deadline">{project.deadline || "Not set"}</InfoRow>
           </div>
@@ -199,15 +192,6 @@ export default function ProjectDetailPage() {
               <p className="truncate text-sm font-semibold text-foreground-900">{project.manager}</p>
               <p className="truncate text-[11px] text-foreground-500">Project Manager</p>
             </div>
-          </div>
-
-          <div className="mt-4 rounded-md border border-background-200 bg-background-100 px-3 py-2.5">
-            <p className="text-[10px] uppercase tracking-wide text-foreground-500">SLA targets (hours)</p>
-            <p className="mt-1 text-[11px] text-foreground-700">
-              {slaPriorityOptions
-                .map((priority) => `${priority} ${project.slaHours[priority] ?? defaultSlaHours[priority]}h`)
-                .join(" · ")}
-            </p>
           </div>
         </Card>
 

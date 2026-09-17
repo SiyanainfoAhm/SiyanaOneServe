@@ -6,7 +6,6 @@ import Button from "@/components/base/Button";
 import CustomDateRangeFields from "@/components/feature/CustomDateRangeFields";
 import {
   queuePriorityOptions,
-  queueAssigneeOptions,
   queueDateOptions,
 } from "@/mocks/consoleQueue";
 import { CUSTOM_RANGE, type DateRangeValue } from "@/utils/date";
@@ -20,6 +19,7 @@ interface QueueFiltersProps {
   priority: string;
   onPriority: (value: string) => void;
   assignee: string;
+  assigneeOptions: string[];
   onAssignee: (value: string) => void;
   dateRange: DateRangeValue;
   onDateRange: (value: DateRangeValue) => void;
@@ -36,6 +36,7 @@ export default function QueueFilters({
   priority,
   onPriority,
   assignee,
+  assigneeOptions,
   onAssignee,
   dateRange,
   onDateRange,
@@ -74,7 +75,7 @@ export default function QueueFilters({
             containerClassName="lg:w-[150px]"
           />
           <Select
-            options={queueAssigneeOptions}
+            options={assigneeOptions}
             value={assignee}
             onChange={(event) => onAssignee(event.target.value)}
             icon="ri-user-line"

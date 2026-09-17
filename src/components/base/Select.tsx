@@ -7,6 +7,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   options: string[];
   icon?: string;
   label?: string;
+  placeholder?: string;
   containerClassName?: string;
 }
 
@@ -14,6 +15,7 @@ export default function Select({
   options,
   icon,
   label,
+  placeholder,
   value,
   onChange,
   className = "",
@@ -41,6 +43,7 @@ export default function Select({
           } pr-9 text-sm text-foreground-800 outline-none cursor-pointer transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100 ${className}`}
           {...rest}
         >
+          {placeholder ? <option value="">{placeholder}</option> : null}
           {options.map((option) => (
             <option key={option} value={option}>
               {option}

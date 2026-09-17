@@ -95,7 +95,6 @@ export const api = {
     return rpc<TicketRecord>("sosticket_get_ticket", { p_token: tokenOrThrow(), p_ticket_id: id });
   },
   createTicket(payload: Record<string, unknown>) {
-    // Client creates usually start at Need Approval; console may skip that.
     return rpc<TicketRecord>("sosticket_create_ticket", { p_token: tokenOrThrow(), p_payload: payload });
   },
   updateTicket(payload: Record<string, unknown>) {
@@ -110,23 +109,8 @@ export const api = {
       p_visibility: visibility,
     });
   },
-  approveTicket(ticketId: string) {
-    // Need Approval → New. Emails go out from the ticket trigger, not the UI.
-    return rpc<TicketRecord>("sosticket_approve_ticket", { p_token: tokenOrThrow(), p_ticket_id: ticketId });
-  },
   rejectTicket(ticketId: string, note?: string) {
     return rpc<TicketRecord>("sosticket_reject_ticket", {
-      p_token: tokenOrThrow(),
-      p_ticket_id: ticketId,
-      p_note: note ?? null,
-    });
-  },
-  verifyTicket(ticketId: string) {
-    // Resolved → Closed. Government requester/nodal officer on the client portal.
-    return rpc<TicketRecord>("sosticket_verify_ticket", { p_token: tokenOrThrow(), p_ticket_id: ticketId });
-  },
-  requestChanges(ticketId: string, note?: string) {
-    return rpc<TicketRecord>("sosticket_request_changes", {
       p_token: tokenOrThrow(),
       p_ticket_id: ticketId,
       p_note: note ?? null,
@@ -149,12 +133,6 @@ export const api = {
   },
   dashboard(projectId?: string | null) {
     return rpc<DashboardStats>("sosticket_dashboard_stats", {
-      p_token: tokenOrThrow(),
-      p_project_id: projectId ?? null,
-    });
-  },
-  slaList(projectId?: string | null) {
-    return rpc<TicketRecord[]>("sosticket_sla_list", {
       p_token: tokenOrThrow(),
       p_project_id: projectId ?? null,
     });

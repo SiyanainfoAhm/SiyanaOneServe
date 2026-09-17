@@ -1,37 +1,32 @@
 /**
- * Read-only ticket metadata on the workbench (org, project, SLA, requester).
+ * Read-only ticket metadata on the workbench (org, project, requester, assignment).
+ * Rejected tickets show the mandatory reason from the timeline or stored rejection fields.
  */
 import type { ReactNode } from "react";
 import Avatar from "@/components/base/Avatar";
-import { TicketStatusBadge, PriorityBadge, SlaBadge } from "@/components/base/StatusBadge";
+import { TicketStatusBadge, PriorityBadge } from "@/components/base/StatusBadge";
 
-interface Approver {
-  name: string;
-  role: string;
+interface Rejection {
+  by: string;
   at: string;
+  reason: string;
 }
 
 interface TicketInfoPanelProps {
   project: string;
   organization: string;
-  category: string;
   status: string;
   priority: string;
   created: string;
-  sla: string;
-  slaDue: string;
   team: string;
   assignee: string;
   assigneeInitials: string;
   assigneeRole: string;
   requester: { name: string; role: string; email?: string; organization?: string };
-  approver?: Approver;
+  rejection?: Rejection;
 }
 
-// Statuses at which no one has been assigned yet. Until a request moves past
-// one of these, the "Assigned To" card always reads "Not Assigned" — even if
-// stale data still carries an assignee name.
-const UNASSIGNED_STATUSES = ["Draft", "Need Approval", "New", "Rejected"];
+const UNASSIGNED_STATUSES = ["New", "Rejected"];
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -47,18 +42,15 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 export default function TicketInfoPanel({
   project,
   organization,
-  category,
   status,
   priority,
   created,
-  sla,
-  slaDue,
   team,
   assignee,
   assigneeInitials,
   assigneeRole,
   requester,
-  approver,
+  rejection,
 }: TicketInfoPanelProps) {
   const isAssigned =
     assignee !== "Unassigned" && !UNASSIGNED_STATUSES.includes(status) && Boolean(assignee.trim());
@@ -70,7 +62,6 @@ export default function TicketInfoPanel({
         <div className="mt-3.5 grid grid-cols-2 gap-x-3 gap-y-3.5">
           <Field label="Project">{project}</Field>
           <Field label="Organization">{organization}</Field>
-          <Field label="Category">{category}</Field>
           <Field label="Created">{created}</Field>
           <Field label="Status">
             <TicketStatusBadge status={status} />
@@ -78,17 +69,6 @@ export default function TicketInfoPanel({
           <Field label="Priority">
             <PriorityBadge priority={priority} />
           </Field>
-        </div>
-        <div className="mt-3.5 border-t border-background-200 pt-3.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
-              SLA Status
-            </span>
-            <SlaBadge sla={sla} />
-          </div>
-          <p className="mt-1.5 text-xs text-foreground-600">
-            Due <span className="font-medium text-foreground-900">{slaDue}</span>
-          </p>
         </div>
       </section>
 
@@ -104,22 +84,16 @@ export default function TicketInfoPanel({
         </div>
       </section>
 
-      {approver ? (
-        <section className="rounded-lg border border-background-200 bg-background-50 p-4">
-          <h3 className="font-heading text-sm font-semibold text-foreground-950">Approved By</h3>
-          <div className="mt-3 flex items-center gap-3">
-            <Avatar initials={approver.name.split(" ").map((p) => p[0]).join("").slice(0, 2)} tone="primary" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground-900">{approver.name}</p>
-              <p className="truncate text-[11px] text-foreground-500">{approver.role}</p>
-            </div>
-          </div>
-          {approver.at ? (
-            <div className="mt-3 flex items-center gap-2 rounded-md bg-background-100 px-3 py-2">
-              <i className="ri-checkbox-circle-line text-foreground-500 text-[15px] leading-none"></i>
-              <span className="text-xs text-foreground-700">Approved on {approver.at}</span>
-            </div>
-          ) : null}
+      {rejection ? (
+        <section className="rounded-lg border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.06)] p-4">
+          <h3 className="flex items-center gap-2 font-heading text-sm font-semibold text-[oklch(var(--status-danger))]">
+            <i className="ri-close-circle-line text-[15px] leading-none"></i>
+            Rejected
+          </h3>
+          <p className="mt-2 text-sm text-foreground-700">{rejection.reason}</p>
+          <p className="mt-2 text-[11px] text-foreground-500">
+            by {rejection.by} · {rejection.at}
+          </p>
         </section>
       ) : null}
 

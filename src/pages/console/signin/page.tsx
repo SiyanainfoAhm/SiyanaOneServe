@@ -3,14 +3,12 @@
  *
  * login(..., "console") — government nodal/requester roles are rejected by sosticket_login.
  * Demo prefill: arjun.mehta@siyana.in / siyana@2026.
- * Test email button is for Power Automate checks — remove before production.
  */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "@/components/base/Button";
 import ForgotPasswordModal from "@/components/feature/ForgotPasswordModal";
 import { useAuth } from "@/context/AuthContext";
-import { sendTestEmail } from "@/lib/testEmail";
 
 const HIGHLIGHTS = [
   { icon: "ri-shield-keyhole-line", text: "Role-based access for every Siyana team" },
@@ -26,9 +24,7 @@ export default function ConsoleSignin() {
   const [password, setPassword] = useState("siyana@2026");
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [testingEmail, setTestingEmail] = useState(false);
   const [error, setError] = useState("");
-  const [testMessage, setTestMessage] = useState("");
   const [forgotOpen, setForgotOpen] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -47,25 +43,6 @@ export default function ConsoleSignin() {
       setError(err instanceof Error ? err.message : "Unable to sign in.");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleTestEmail() {
-    if (!email.trim() || !email.includes("@")) {
-      setError("Enter an email address to send the test.");
-      setTestMessage("");
-      return;
-    }
-    setError("");
-    setTestMessage("");
-    setTestingEmail(true);
-    try {
-      const result = await sendTestEmail(email.trim());
-      setTestMessage(`Test email sent to ${result.to}. Power Automate status ${result.status}.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to send test email.");
-    } finally {
-      setTestingEmail(false);
     }
   }
 
@@ -174,19 +151,6 @@ export default function ConsoleSignin() {
             <Button type="submit" variant="primary" size="lg" fullWidth disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              fullWidth
-              disabled={testingEmail}
-              onClick={() => void handleTestEmail()}
-            >
-              {testingEmail ? "Sending test…" : "Test email"}
-            </Button>
-            {testMessage ? (
-              <p className="text-xs text-accent-700">{testMessage}</p>
-            ) : null}
           </form>
 
           <div className="mt-6 flex items-start gap-2.5 rounded-lg border border-background-200 bg-background-100 p-3.5">

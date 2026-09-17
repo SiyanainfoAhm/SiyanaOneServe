@@ -1,8 +1,7 @@
 /**
- * Ticket / SLA / priority chips.
+ * Ticket and priority chips.
  *
- * Lifecycle (server-enforced): Need Approval → New → Assigned → In Progress → Resolved → Closed.
- * Rejected is a terminal draft-approval outcome. Draft is rarely used in live data.
+ * Dashboard and queue follow New → Assigned → In Progress → Resolved, with Rejected terminal.
  */
 export type Tone = "primary" | "accent" | "secondary" | "info" | "success" | "warning" | "danger" | "neutral";
 
@@ -28,16 +27,7 @@ const STATUS_TONES: Record<string, Tone> = {
   Rejected: "danger",
 };
 
-export const STATUS_ORDER = [
-  "Draft",
-  "Need Approval",
-  "New",
-  "Assigned",
-  "In Progress",
-  "Resolved",
-  "Closed",
-  "Rejected",
-];
+export const STATUS_ORDER = ["New", "Assigned", "In Progress", "Resolved", "Rejected"];
 
 export const STATUS_ICONS: Record<string, string> = {
   Draft: "ri-draft-line",

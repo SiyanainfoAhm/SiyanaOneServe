@@ -11,25 +11,19 @@ export function toClientRequest(ticket: TicketRecord): ClientRequest {
   return {
     id: ticket.id,
     title: ticket.title,
-    category: ticket.category,
-    requestType: ticket.request_type || ticket.category,
     status: ticket.status,
     priority: ticket.priority,
     project: ticket.project,
     created: ticket.created,
     updated: ticket.updated,
-    sla: ticket.sla,
-    waitingOnMe: Boolean(ticket.waiting_on_me),
     submittedBy: ticket.submitted_by ?? undefined,
-    approvedBy: ticket.approved_by ?? undefined,
-    approvedByRole: ticket.approved_by_role ?? undefined,
-    approvedAt: ticket.approved_at ?? undefined,
   };
 }
 
 export function toClientDetail(ticket: TicketRecord): ClientRequestDetail {
   return {
     description: ticket.description,
+    referenceLink: ticket.reference_url || "",
     assignedTeam: ticket.team === "Unassigned" ? "Siyana Support Team" : ticket.team,
     assignee: ticket.assignee,
     assigneeInitials: ticket.assignee_initials || "—",
@@ -84,13 +78,9 @@ export async function addClientRequest() {
   /* created through api.createTicket */
 }
 
-export async function updateRequestStatus(id: string, status: string) {
-  if (status === "Rejected") return api.rejectTicket(id);
+export async function updateRequestStatus(id: string, status: string, note?: string) {
+  if (status === "Rejected") return api.rejectTicket(id, note);
   return api.updateTicket({ id, status });
-}
-
-export async function approveRequest(id: string) {
-  return api.approveTicket(id);
 }
 
 export async function addRequestNote(id: string, body: string) {

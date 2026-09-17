@@ -1,12 +1,11 @@
 /**
- * Operations home: KPIs, SLA, trends, recent tickets. Scoped by top-bar project.
+ * Operations home: KPIs, trends, recent tickets. Scoped by top-bar project.
  */
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ConsoleLayout from "@/pages/console/components/ConsoleLayout";
 import TicketTrendChart from "@/pages/console/components/TicketTrendChart";
 import TicketDistribution from "@/pages/console/components/TicketDistribution";
-import SlaWidget from "@/pages/console/components/SlaWidget";
 import TeamWorkload from "@/pages/console/components/TeamWorkload";
 import RecentTicketsTable from "@/pages/console/components/RecentTicketsTable";
 import StatusStatRow from "@/components/feature/StatusStatRow";
@@ -91,7 +90,7 @@ export default function ConsoleDashboard() {
         <Card className="xl:col-span-2">
           <CardHeader
             title="Ticket Trend"
-            subtitle="Created vs Closed · last 14 days"
+            subtitle="Created vs Resolved · last 14 days"
             action={
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 text-xs text-foreground-600">
@@ -100,7 +99,7 @@ export default function ConsoleDashboard() {
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-foreground-600">
                   <span className="w-2.5 h-2.5 rounded-full bg-accent-500"></span>
-                  Closed
+                  Resolved
                 </span>
               </div>
             }
@@ -111,7 +110,7 @@ export default function ConsoleDashboard() {
         </Card>
 
         <Card>
-          <CardHeader title="Ticket Distribution" subtitle="Active tickets by dimension" />
+          <CardHeader title="Priority Distribution" subtitle="Active tickets by priority" />
           <div className="mt-4">
             <TicketDistribution />
           </div>
@@ -119,21 +118,23 @@ export default function ConsoleDashboard() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2">
-          <CardHeader
-            title="SLA Performance"
-            subtitle="Service level adherence across all projects"
-            action={
-              <Link
-                to="/console/sla"
-                className="text-xs font-medium text-primary-700 hover:text-primary-800 whitespace-nowrap cursor-pointer"
-              >
-                Open SLA Monitor
-              </Link>
-            }
-          />
-          <div className="mt-5">
-            <SlaWidget />
+        <Card className="xl:col-span-2" padded={false}>
+          <div className="px-5 pt-5">
+            <CardHeader
+              title="Recent Tickets"
+              subtitle="Latest service requests across all government projects"
+              action={
+                <Link
+                  to="/console/queue"
+                  className="text-xs font-medium text-primary-700 hover:text-primary-800 whitespace-nowrap cursor-pointer"
+                >
+                  View all tickets
+                </Link>
+              }
+            />
+          </div>
+          <div className="mt-4">
+            <RecentTicketsTable tickets={tickets} />
           </div>
         </Card>
 
@@ -152,28 +153,6 @@ export default function ConsoleDashboard() {
           />
           <div className="mt-5">
             <TeamWorkload />
-          </div>
-        </Card>
-      </div>
-
-      <div className="mt-4">
-        <Card padded={false}>
-          <div className="px-5 pt-5">
-            <CardHeader
-              title="Recent Tickets"
-              subtitle="Latest service requests across all government projects"
-              action={
-                <Link
-                  to="/console/queue"
-                  className="text-xs font-medium text-primary-700 hover:text-primary-800 whitespace-nowrap cursor-pointer"
-                >
-                  View all tickets
-                </Link>
-              }
-            />
-          </div>
-          <div className="mt-4">
-            <RecentTicketsTable tickets={tickets} />
           </div>
         </Card>
       </div>

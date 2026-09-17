@@ -1,23 +1,27 @@
 /**
- * Workbench assign + status change. Saving calls sosticket_update_ticket;
- * the DB trigger sends Power Automate mail to the assignee / requester.
+ * Workbench assignment and forward-only workflow.
+ *
+ * New → Assigned → In Progress → Resolved. Reject is terminal and needs a reason.
+ * Priority is set by the department and cannot be changed here.
+ * Team and assignee lists come from live staff, not mock data.
  */
+import { useState } from "react";
 import Select from "@/components/base/Select";
 import Button from "@/components/base/Button";
-import { workbenchStatuses, workbenchTeams, workbenchAssigneesByTeam } from "@/mocks/consoleTicket";
 
 interface ActionPanelProps {
   status: string;
-  statusDraft: string;
-  onStatusDraft: (value: string) => void;
-  onUpdateStatus: () => void;
   teamDraft: string;
   onTeamDraft: (value: string) => void;
   userDraft: string;
   onUserDraft: (value: string) => void;
   priority: string;
   onAssign: () => void;
-  assignees?: string[];
+  onStartWork: () => void;
+  onResolve: () => void;
+  onReject: (reason: string) => void;
+  teams: string[];
+  assignees: string[];
 }
 
 function SectionTitle({ icon, label }: { icon: string; label: string }) {
@@ -33,44 +37,59 @@ function SectionTitle({ icon, label }: { icon: string; label: string }) {
 
 export default function ActionPanel({
   status,
-  statusDraft,
-  onStatusDraft,
-  onUpdateStatus,
   teamDraft,
   onTeamDraft,
   userDraft,
   onUserDraft,
   priority,
   onAssign,
+  onStartWork,
+  onResolve,
+  onReject,
+  teams,
   assignees,
 }: ActionPanelProps) {
-  const assigneeOptions = assignees ?? workbenchAssigneesByTeam[teamDraft] ?? [];
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState("");
+
+  const isResolved = status === "Resolved" || status === "Closed";
+  const isRejected = status === "Rejected";
+  const closed = isResolved || isRejected;
+  const canStart = status === "Assigned";
+  const canResolve = status === "In Progress";
+
+  function confirmReject() {
+    if (!reason.trim()) {
+      setError("A rejection reason is mandatory.");
+      return;
+    }
+    onReject(reason.trim());
+    setRejectOpen(false);
+    setReason("");
+    setError("");
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-lg border border-background-200 bg-background-50 p-4">
-        <SectionTitle icon="ri-exchange-line" label="Change Status" />
-        <div className="mt-3">
-          <Select options={workbenchStatuses} value={statusDraft} onChange={(e) => onStatusDraft(e.target.value)} />
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          fullWidth
-          className="mt-2.5"
-          icon="ri-refresh-line"
-          onClick={onUpdateStatus}
-          disabled={statusDraft === status}
-        >
-          Update Status
-        </Button>
-      </section>
-
-      <section className="rounded-lg border border-background-200 bg-background-50 p-4">
         <SectionTitle icon="ri-user-add-line" label="Assignment" />
         <div className="mt-3 flex flex-col gap-2.5">
-          <Select options={workbenchTeams} value={teamDraft} onChange={(e) => onTeamDraft(e.target.value)} label="Team" />
-          <Select options={assigneeOptions} value={userDraft} onChange={(e) => onUserDraft(e.target.value)} label="Assign User" />
+          <Select
+            options={teams}
+            value={teamDraft}
+            onChange={(e) => onTeamDraft(e.target.value)}
+            label="Team"
+            placeholder="Select team"
+          />
+          <Select
+            options={assignees}
+            value={userDraft}
+            onChange={(e) => onUserDraft(e.target.value)}
+            label="Assign User"
+            placeholder={teamDraft ? "Select user" : "Choose a team first"}
+            disabled={!teamDraft}
+          />
         </div>
         <div className="mt-3 flex items-center justify-between rounded-md border border-background-200 bg-background-100 px-3 py-2.5">
           <span className="text-xs text-foreground-600">Priority (set by department)</span>
@@ -79,10 +98,88 @@ export default function ActionPanel({
             {priority}
           </span>
         </div>
-        <Button variant="accent" size="sm" fullWidth className="mt-3" icon="ri-check-line" onClick={onAssign}>
+        <Button variant="accent" size="sm" fullWidth className="mt-3" icon="ri-check-line" onClick={onAssign} disabled={closed || !userDraft}>
           Save Assignment
         </Button>
       </section>
+
+      <section className="rounded-lg border border-background-200 bg-background-50 p-4">
+        <SectionTitle icon="ri-flow-chart" label="Workflow" />
+        <div className="mt-3 flex flex-col gap-2">
+          <Button variant="outline" size="sm" fullWidth icon="ri-play-circle-line" onClick={onStartWork} disabled={!canStart}>
+            Start Work
+          </Button>
+          <Button variant="primary" size="sm" fullWidth icon="ri-checkbox-circle-line" onClick={onResolve} disabled={!canResolve}>
+            Mark Resolved
+          </Button>
+        </div>
+        <p className="mt-2.5 text-[11px] leading-relaxed text-foreground-500">
+          Forward flow only: New → Assigned → In Progress → Resolved. Rejecting a ticket is final.
+        </p>
+      </section>
+
+      {!closed ? (
+        <section className="rounded-lg border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.05)] p-4">
+          <SectionTitle icon="ri-close-circle-line" label="Reject Ticket" />
+          {rejectOpen ? (
+            <>
+              <label htmlFor="console-reject" className="mt-3 block text-xs font-label font-semibold text-foreground-800">
+                Reason for rejection <span className="text-[oklch(var(--status-danger))]">*</span>
+              </label>
+              <textarea
+                id="console-reject"
+                value={reason}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                  setError("");
+                }}
+                rows={3}
+                maxLength={300}
+                placeholder="e.g. Request outside scope, insufficient information, not feasible…"
+                className="mt-1.5 w-full resize-none rounded-md border border-background-300 bg-background-50 px-3 py-2 text-sm text-foreground-900 placeholder:text-foreground-400 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+              />
+              {error ? (
+                <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-[oklch(var(--status-danger))]">
+                  <i className="ri-error-warning-line text-[13px] leading-none mt-0.5"></i>
+                  {error}
+                </p>
+              ) : null}
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setRejectOpen(false);
+                    setReason("");
+                    setError("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button variant="danger" size="sm" icon="ri-close-line" onClick={confirmReject}>
+                  Confirm Reject
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-[11px] leading-relaxed text-foreground-600">
+                Rejecting requires a reason. The requester is notified and the ticket is marked Rejected.
+              </p>
+              <Button
+                variant="danger"
+                size="sm"
+                fullWidth
+                className="mt-3"
+                icon="ri-close-circle-line"
+                onClick={() => setRejectOpen(true)}
+              >
+                Reject Ticket
+              </Button>
+            </>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -18,17 +18,12 @@ import { useProjectScope, ALL_PROJECTS } from "@/hooks/useProjectScope";
 import { useAppData } from "@/context/AppDataContext";
 import {
   projectStatusOptions,
-  slaPriorityOptions,
-  defaultSlaHours,
   type Project,
 } from "@/mocks/consoleProjects";
 
 const STATUS_TONE: Record<string, Tone> = {
   Active: "success",
-  "On Hold": "warning",
   Inactive: "neutral",
-  Closing: "primary",
-  Completed: "neutral",
 };
 
 function initialsOf(name: string): string {
@@ -107,10 +102,8 @@ export default function ProjectsPage() {
           name: values.name,
           organization: values.organization,
           status: values.status as Project["status"],
-          category: values.category,
           manager: values.manager,
           managerInitials: initialsOf(values.manager),
-          slaHours: values.slaHours,
         });
         showToast(`Project ${values.name} updated`);
       } else {
@@ -125,11 +118,8 @@ export default function ProjectsPage() {
           progress: 0,
           openTickets: 0,
           totalTickets: 0,
-          slaHealth: 100,
-          category: values.category,
           started: "Sep 2026",
           deadline: "",
-          slaHours: values.slaHours,
         };
         await addProject(project);
         showToast(`Project ${project.name} created`);
@@ -223,7 +213,7 @@ export default function ProjectsPage() {
                   {project.name}
                 </Link>
               </h3>
-              <p className="mt-0.5 font-mono text-[11px] text-foreground-500">{project.code} · {project.category}</p>
+              <p className="mt-0.5 font-mono text-[11px] text-foreground-500">{project.code} · started {project.started}</p>
 
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs">
@@ -238,28 +228,15 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2 rounded-md bg-background-100 p-2.5">
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-md bg-background-100 p-2.5">
                 <div className="text-center">
                   <p className="font-heading text-sm font-bold text-foreground-950">{project.openTickets}</p>
                   <p className="text-[10px] uppercase tracking-wide text-foreground-500">Open</p>
                 </div>
-                <div className="text-center border-x border-background-200">
+                <div className="text-center border-l border-background-200">
                   <p className="font-heading text-sm font-bold text-foreground-950">{project.totalTickets}</p>
                   <p className="text-[10px] uppercase tracking-wide text-foreground-500">Total</p>
                 </div>
-                <div className="text-center">
-                  <p className={`font-heading text-sm font-bold ${project.slaHealth >= 90 ? "text-accent-700" : project.slaHealth >= 80 ? "text-primary-700" : "text-[oklch(var(--status-warning))]"}`}>
-                    {project.slaHealth}%
-                  </p>
-                  <p className="text-[10px] uppercase tracking-wide text-foreground-500">SLA</p>
-                </div>
-              </div>
-
-              <div className="mt-3 rounded-md border border-background-200 bg-background-50 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wide text-foreground-500">SLA targets (hours)</p>
-                <p className="mt-0.5 text-[11px] text-foreground-700">
-                  {slaPriorityOptions.map((priority) => `${priority.slice(0, 1)} ${project.slaHours[priority] ?? defaultSlaHours[priority]}h`).join(" · ")}
-                </p>
               </div>
 
               <div className="mt-4 flex items-center gap-2 border-t border-background-100 pt-3.5">
@@ -285,10 +262,10 @@ export default function ProjectsPage() {
       ) : (
         <Card className="mt-4" padded={false}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px] border-collapse">
+            <table className="w-full min-w-[900px] border-collapse">
               <thead>
                 <tr className="border-b border-background-200 bg-background-50">
-                  {["Project", "Organization", "Manager", "Status", "Progress", "Open", "SLA Health", ""].map((head, index) => (
+                  {["Project", "Organization", "Manager", "Status", "Progress", "Open", ""].map((head, index) => (
                     <th key={head || `col-${index}`} className="px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
                       {head}
                     </th>
@@ -326,7 +303,6 @@ export default function ProjectsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground-800">{project.openTickets}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-label font-semibold text-foreground-800">{project.slaHealth}%</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       <Button variant="outline" size="sm" icon="ri-pencil-line" onClick={() => openEdit(project)}>
                         Edit

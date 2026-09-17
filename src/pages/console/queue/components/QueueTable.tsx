@@ -1,12 +1,11 @@
 /**
  * Sortable ticket table. Row click opens /console/tickets/:id.
- * Bulk Assign / Change Status checkboxes exist but are not wired to RPCs.
+ * Inline and bulk status changes call sosticket_update_ticket.
  */
 import { Link } from "react-router-dom";
 import Avatar from "@/components/base/Avatar";
 import { PriorityBadge } from "@/components/base/StatusBadge";
 import EmptyState from "@/components/base/EmptyState";
-import SlaCountdownCell from "@/pages/console/queue/components/SlaCountdownCell";
 import { workbenchStatuses } from "@/mocks/consoleTicket";
 import { formatDisplayDate } from "@/utils/date";
 import type { QueueTicket } from "@/mocks/consoleQueue";
@@ -22,18 +21,15 @@ interface QueueTableProps {
   sort: { key: SortKey; dir: "asc" | "desc" };
   onSort: (key: SortKey) => void;
   onStatusChange: (id: string, status: string) => void;
-  elapsed: number;
 }
 
 const HEAD = "px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500";
 
 const STATUS_TONE_BORDER: Record<string, string> = {
-  Draft: "border-secondary-200 text-secondary-800",
-  "Need Approval": "border-[oklch(var(--status-warning)/0.4)] text-[oklch(var(--status-warning))]",
   New: "border-[oklch(var(--status-info)/0.4)] text-[oklch(var(--status-info))]",
   Assigned: "border-primary-200 text-primary-700",
   "In Progress": "border-primary-200 text-primary-700",
-  Closed: "border-accent-200 text-accent-700",
+  Resolved: "border-accent-200 text-accent-700",
   Rejected: "border-[oklch(var(--status-danger)/0.4)] text-[oklch(var(--status-danger))]",
 };
 
@@ -66,6 +62,10 @@ function SortButton({
   );
 }
 
+function statusOptions(current: string) {
+  return workbenchStatuses.includes(current) ? workbenchStatuses : [current, ...workbenchStatuses];
+}
+
 export default function QueueTable({
   rows,
   selected,
@@ -75,7 +75,6 @@ export default function QueueTable({
   sort,
   onSort,
   onStatusChange,
-  elapsed,
 }: QueueTableProps) {
   if (rows.length === 0) {
     return (
@@ -89,7 +88,7 @@ export default function QueueTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1080px] border-collapse">
+      <table className="w-full min-w-[980px] border-collapse">
         <thead>
           <tr className="border-b border-background-200 bg-background-50">
             <th className="w-12 px-4 py-2.5">
@@ -103,13 +102,11 @@ export default function QueueTable({
             </th>
             <th className={HEAD}>Ticket ID</th>
             <th className={HEAD}>Request</th>
-            <th className={HEAD}>Category</th>
             <th className={HEAD}>
               <SortButton label="Priority" active={sort.key === "priority"} dir={sort.dir} onClick={() => onSort("priority")} />
             </th>
             <th className={HEAD}>Status</th>
-            <th className={HEAD}>Assignee</th>
-            <th className={HEAD}>SLA Due</th>
+            <th className={HEAD}>Assigned User</th>
             <th className={HEAD}>
               <SortButton label="Created" active={sort.key === "created"} dir={sort.dir} onClick={() => onSort("created")} />
             </th>
@@ -143,7 +140,7 @@ export default function QueueTable({
                     {ticket.id}
                   </Link>
                 </td>
-                <td className="px-4 py-3 max-w-[280px]">
+                <td className="px-4 py-3 max-w-[320px]">
                   <Link
                     to={`/console/tickets/${ticket.id}`}
                     className="block text-sm font-medium text-foreground-900 hover:text-primary-700 transition-colors cursor-pointer truncate"
@@ -153,9 +150,6 @@ export default function QueueTable({
                   <span className="block text-[11px] text-foreground-500 truncate">
                     {ticket.organization} · {ticket.project}
                   </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-600">
-                  {ticket.category}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <PriorityBadge priority={ticket.priority} />
@@ -170,7 +164,7 @@ export default function QueueTable({
                         STATUS_TONE_BORDER[ticket.status] ?? "border-background-300 text-foreground-700"
                       }`}
                     >
-                      {workbenchStatuses.map((status) => (
+                      {statusOptions(ticket.status).map((status) => (
                         <option key={status} value={status}>
                           {status}
                         </option>
@@ -199,15 +193,6 @@ export default function QueueTable({
                       <span className="text-xs text-foreground-700">{ticket.assignee}</span>
                     </span>
                   )}
-                </td>
-                <td className="px-4 py-3">
-                  <SlaCountdownCell
-                    id={ticket.id}
-                    priority={ticket.priority}
-                    sla={ticket.sla}
-                    elapsed={elapsed}
-                    dueInSeconds={ticket.dueInSeconds}
-                  />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-500">
                   {formatDisplayDate(ticket.created)}

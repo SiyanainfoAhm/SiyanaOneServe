@@ -6,13 +6,13 @@ export interface QueueTicket {
   title: string;
   organization: string;
   project: string;
-  category: string;
   status: string;
   priority: string;
   assignee: string;
   team: string;
   created: string;
-  sla: string;
+  category?: string;
+  sla?: string;
   dueInSeconds?: number;
   windowSeconds?: number;
 }

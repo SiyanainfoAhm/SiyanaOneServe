@@ -13,7 +13,6 @@ import ConsoleDashboard from "@/pages/console/dashboard/page";
 import ConsoleCreate from "@/pages/console/create/page";
 import ConsoleQueue from "@/pages/console/queue/page";
 import ConsoleWorkbench from "@/pages/console/tickets/page";
-import ConsoleSla from "@/pages/console/sla/page";
 import ConsoleProjects from "@/pages/console/projects/page";
 import ConsoleProjectDetail from "@/pages/console/projects/detail/page";
 import ConsoleReports from "@/pages/console/reports/page";
@@ -25,7 +24,6 @@ import ClientDashboard from "@/pages/client/dashboard/page";
 import ClientCreate from "@/pages/client/create/page";
 import ClientMyRequests from "@/pages/client/requests/page";
 import ClientRequestDetail from "@/pages/client/requests/detail/page";
-import ClientDraftApprovals from "@/pages/client/draft-approvals/page";
 import ClientNotifications from "@/pages/client/notifications/page";
 import ClientProfile from "@/pages/client/profile/page";
 
@@ -69,10 +67,6 @@ const routes: RouteObject[] = [
   {
     path: "/console/tickets/:id",
     element: consolePage(<ConsoleWorkbench />),
-  },
-  {
-    path: "/console/sla",
-    element: consolePage(<ConsoleSla />),
   },
   {
     path: "/console/projects",
@@ -125,10 +119,6 @@ const routes: RouteObject[] = [
   {
     path: "/client/requests/:id",
     element: clientPage(<ClientRequestDetail />),
-  },
-  {
-    path: "/client/draft-approvals",
-    element: clientPage(<ClientDraftApprovals />),
   },
   {
     path: "/client/notifications",

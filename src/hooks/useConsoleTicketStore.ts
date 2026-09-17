@@ -14,15 +14,11 @@ export function toQueueTicket(ticket: TicketRecord): QueueTicket {
     title: ticket.title,
     organization: ticket.organization,
     project: ticket.project,
-    category: ticket.category,
     status: ticket.status,
     priority: ticket.priority,
     assignee: ticket.assignee,
     team: ticket.team,
     created: ticket.created,
-    sla: ticket.sla,
-    dueInSeconds: Number(ticket.due_in_seconds ?? 0),
-    windowSeconds: Number(ticket.window_seconds ?? 0),
   };
 }
 
@@ -40,8 +36,13 @@ export async function updateTicketStatus(id: string, status: string) {
   return ticket;
 }
 
-export async function assignTicket(id: string, team: string, assignee: string) {
-  const ticket = await api.updateTicket({ id, team, assignee });
+export async function assignTicket(id: string, team: string, assignee: string, status?: string) {
+  const ticket = await api.updateTicket({
+    id,
+    team,
+    assignee,
+    ...(status ? { status } : {}),
+  });
   return ticket;
 }
 

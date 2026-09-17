@@ -53,16 +53,16 @@ export const clientCategoryBreakdown = [
 export interface ClientRequest {
   id: string;
   title: string;
-  category: string;
-  requestType: string;
   status: string;
   priority: string;
   project: string;
   created: string;
   updated: string;
-  sla: string;
-  waitingOnMe: boolean;
   submittedBy?: string;
+  category?: string;
+  requestType?: string;
+  sla?: string;
+  waitingOnMe?: boolean;
   approvedBy?: string;
   approvedByRole?: string;
   approvedAt?: string;
@@ -360,6 +360,7 @@ export interface ClientAttachment {
 
 export interface ClientRequestDetail {
   description: string;
+  referenceLink?: string;
   assignedTeam: string;
   assignee: string;
   assigneeInitials: string;

@@ -1,8 +1,7 @@
 /**
- * Client nav: dashboard, create, my requests, draft approvals, notifications, profile.
+ * Client nav: dashboard, create, my requests, profile.
  */
 import { NavLink, Link, useNavigate } from "react-router-dom";
-import { useClientRequests } from "@/hooks/useClientRequestStore";
 import { useAuth } from "@/context/AuthContext";
 
 interface NavItem {
@@ -16,7 +15,6 @@ const NAV_PRIMARY: NavItem[] = [
   { label: "Dashboard", to: "/client/dashboard", icon: "ri-dashboard-3-line" },
   { label: "Create Request", to: "/client/create", icon: "ri-add-circle-line" },
   { label: "My Requests", to: "/client/requests", icon: "ri-file-list-3-line" },
-  { label: "Draft Approval Request", to: "/client/draft-approvals", icon: "ri-user-received-line" },
 ];
 
 const NAV_SECONDARY: NavItem[] = [
@@ -63,13 +61,8 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void })
 }
 
 export default function ClientSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const requests = useClientRequests();
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const pendingCount = requests.filter((item) => item.status === "Need Approval").length;
-  const navPrimary = NAV_PRIMARY.map((item) =>
-    item.to === "/client/draft-approvals" ? { ...item, count: pendingCount } : item,
-  );
 
   async function handleSignOut() {
     await logout();
@@ -119,7 +112,7 @@ export default function ClientSidebar({ open, onClose }: { open: boolean; onClos
             Service
           </p>
           <div className="flex flex-col gap-0.5">
-            {navPrimary.map((item) => (
+            {NAV_PRIMARY.map((item) => (
               <NavRow key={item.to} item={item} onNavigate={onClose} />
             ))}
           </div>

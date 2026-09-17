@@ -7,10 +7,9 @@ import { useAppData } from "@/context/AppDataContext";
 import { useProjectScope, filterByProject } from "@/hooks/useProjectScope";
 import { countMap } from "@/utils/liveStats";
 
-type TabKey = "category" | "priority" | "organization";
+type TabKey = "priority" | "organization";
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "category", label: "Category" },
   { key: "priority", label: "Priority" },
   { key: "organization", label: "Organization" },
 ];
@@ -38,15 +37,11 @@ const tooltipStyle = {
 };
 
 export default function TicketDistribution() {
-  const [tab, setTab] = useState<TabKey>("category");
+  const [tab, setTab] = useState<TabKey>("priority");
   const { tickets } = useAppData();
   const scope = useProjectScope();
   const scoped = useMemo(() => filterByProject(tickets, scope), [tickets, scope]);
 
-  const categoryData = countMap(scoped, "category").map((item, index) => ({
-    ...item,
-    color: TONE_COLOR[index % TONE_COLOR.length],
-  }));
   const priorityData = countMap(scoped, "priority").map((item) => ({
     ...item,
     color: PRIORITY_COLOR[item.name] ?? TONE_COLOR[0],
@@ -56,7 +51,7 @@ export default function TicketDistribution() {
     color: TONE_COLOR[index % TONE_COLOR.length],
   }));
 
-  const activeData = tab === "category" ? categoryData : tab === "priority" ? priorityData : orgData;
+  const activeData = tab === "priority" ? priorityData : orgData;
   const total = activeData.reduce((sum, item) => sum + item.value, 0);
 
   return (
