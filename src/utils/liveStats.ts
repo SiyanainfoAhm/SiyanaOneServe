@@ -107,10 +107,11 @@ export function workloadFromTickets(tickets: TicketRecord[]) {
 export function categoryBreakdown(tickets: TicketRecord[]) {
   const map = new Map<string, { name: string; value: number; resolved: number }>();
   tickets.forEach((ticket) => {
-    const entry = map.get(ticket.category) ?? { name: ticket.category, value: 0, resolved: 0 };
+    const name = ticket.category || "Other";
+    const entry = map.get(name) ?? { name, value: 0, resolved: 0 };
     entry.value += 1;
     if (ticket.status === "Resolved" || ticket.status === "Closed") entry.resolved += 1;
-    map.set(ticket.category, entry);
+    map.set(name, entry);
   });
   return Array.from(map.values())
     .sort((a, b) => b.value - a.value)

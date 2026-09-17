@@ -9,7 +9,7 @@ import { Link, useParams } from "react-router-dom";
 import ConsoleLayout from "@/pages/console/components/ConsoleLayout";
 import Card from "@/components/base/Card";
 import Tabs from "@/components/base/Tabs";
-import { TicketStatusBadge, PriorityBadge, SlaBadge } from "@/components/base/StatusBadge";
+import { TicketStatusBadge, PriorityBadge } from "@/components/base/StatusBadge";
 import EmptyState from "@/components/base/EmptyState";
 import TicketInfoPanel from "@/pages/console/tickets/components/TicketInfoPanel";
 import TicketAttachments from "@/components/feature/TicketAttachments";
@@ -21,7 +21,8 @@ import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/services/api";
 import { formatDisplayDate } from "@/utils/date";
 import type { TicketRecord } from "@/types/oneserve";
-import { workbenchTeams } from "@/mocks/consoleTicket";
+import { USER_TEAMS } from "@/pages/console/users/components/UserFormModal";
+import { rejectionFromEvents } from "@/utils/ticketStats";
 
 function initialsOf(name: string): string {
   return name
@@ -39,8 +40,7 @@ function TicketWorkbench({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [centerTab, setCenterTab] = useState("details");
   const [draft, setDraft] = useState("");
-  const [statusDraft, setStatusDraft] = useState("New");
-  const [teamDraft, setTeamDraft] = useState(workbenchTeams[0]);
+  const [teamDraft, setTeamDraft] = useState("");
   const [userDraft, setUserDraft] = useState("");
   const [toast, setToast] = useState("");
 
@@ -51,9 +51,17 @@ function TicketWorkbench({ id }: { id: string }) {
     try {
       const ticket = await api.getTicket(id);
       setDetail(ticket);
-      setStatusDraft(ticket.status);
-      setTeamDraft(ticket.team !== "Unassigned" ? ticket.team : workbenchTeams[0]);
-      setUserDraft(ticket.assignee !== "Unassigned" ? ticket.assignee : "");
+      const staff = users.filter((item) => item.type === "staff" && item.status !== "Inactive");
+      const assigneeName = ticket.assignee !== "Unassigned" ? ticket.assignee : "";
+      const assigneeTeam = staff.find((item) => (item.full_name || item.name) === assigneeName)?.team;
+      setTeamDraft(
+        ticket.team && ticket.team !== "Unassigned"
+          ? ticket.team
+          : assigneeTeam && assigneeTeam !== "—"
+            ? assigneeTeam
+            : "",
+      );
+      setUserDraft(assigneeName);
       replaceTicket(ticket);
     } catch {
       setDetail(null);
@@ -69,13 +77,35 @@ function TicketWorkbench({ id }: { id: string }) {
 
   const staffByTeam = useMemo(() => {
     const map: Record<string, string[]> = {};
-    workbenchTeams.forEach((team) => {
-      map[team] = users
-        .filter((item) => item.type === "staff" && item.team === team && item.status === "Active")
-        .map((item) => item.full_name);
-    });
+    users
+      .filter((item) => item.type === "staff" && item.status !== "Inactive")
+      .forEach((item) => {
+        const team = item.team && item.team !== "—" ? item.team : "Operations";
+        const name = item.full_name || item.name;
+        if (!name) return;
+        map[team] = map[team] ? (map[team].includes(name) ? map[team] : [...map[team], name]) : [name];
+      });
     return map;
   }, [users]);
+
+  const teamOptions = useMemo(() => {
+    const names = new Set<string>(USER_TEAMS);
+    Object.keys(staffByTeam).forEach((team) => names.add(team));
+    if (teamDraft) names.add(teamDraft);
+    return Array.from(names);
+  }, [staffByTeam, teamDraft]);
+
+  const assigneeOptions = useMemo(() => {
+    const names = [...(staffByTeam[teamDraft] ?? [])];
+    if (userDraft && !names.includes(userDraft)) names.unshift(userDraft);
+    return names;
+  }, [staffByTeam, teamDraft, userDraft]);
+
+  useEffect(() => {
+    if (!userDraft || teamDraft) return;
+    const team = Object.entries(staffByTeam).find(([, names]) => names.includes(userDraft))?.[0];
+    if (team) setTeamDraft(team);
+  }, [staffByTeam, userDraft, teamDraft]);
 
   function showToast(text: string) {
     setToast(text);
@@ -136,24 +166,40 @@ function TicketWorkbench({ id }: { id: string }) {
     await refresh();
   }
 
-  async function handleUpdateStatus() {
-    const ticket = await api.updateTicket({ id, status: statusDraft, priority: live.priority });
-    setDetail(ticket);
-    replaceTicket(ticket);
-    showToast(`Status updated to ${statusDraft}`);
-    await refresh();
-  }
-
   async function handleAssign() {
     const ticket = await api.updateTicket({
       id,
       team: teamDraft,
       assignee: userDraft || undefined,
-      status: statusDraft,
+      status: live.status === "New" ? "Assigned" : live.status,
     });
     setDetail(ticket);
     replaceTicket(ticket);
     showToast(`Assigned to ${userDraft || teamDraft}`);
+    await refresh();
+  }
+
+  async function handleStartWork() {
+    const ticket = await api.updateTicket({ id, status: "In Progress" });
+    setDetail(ticket);
+    replaceTicket(ticket);
+    showToast("Work started");
+    await refresh();
+  }
+
+  async function handleResolve() {
+    const ticket = await api.updateTicket({ id, status: "Resolved" });
+    setDetail(ticket);
+    replaceTicket(ticket);
+    showToast("Ticket marked Resolved");
+    await refresh();
+  }
+
+  async function handleReject(reason: string) {
+    const ticket = await api.rejectTicket(id, reason);
+    setDetail(ticket);
+    replaceTicket(ticket);
+    showToast("Ticket rejected");
     await refresh();
   }
 
@@ -176,7 +222,6 @@ function TicketWorkbench({ id }: { id: string }) {
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <TicketStatusBadge status={live.status} />
           <PriorityBadge priority={live.priority} />
-          <SlaBadge sla={live.sla} />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-background-200 bg-background-100 px-2.5 py-0.5 text-xs text-foreground-600">
             <i className="ri-folders-line text-[13px] leading-none"></i>
             {live.project}
@@ -189,12 +234,9 @@ function TicketWorkbench({ id }: { id: string }) {
           <TicketInfoPanel
             project={live.project}
             organization={live.organization}
-            category={live.category}
             status={live.status}
             priority={live.priority}
             created={formatDisplayDate(live.created)}
-            sla={live.sla}
-            slaDue={live.sla_due || ""}
             team={live.team}
             assignee={live.assignee}
             assigneeInitials={live.assignee_initials || "—"}
@@ -205,11 +247,11 @@ function TicketWorkbench({ id }: { id: string }) {
               email: live.requester_email,
               organization: live.organization,
             }}
-            approver={
-              live.approved_by
-                ? { name: live.approved_by, role: live.approved_by_role || "Approver", at: live.approved_at || "" }
-                : undefined
-            }
+            rejection={rejectionFromEvents(live.status, live.events, live.updated, {
+              reason: live.rejection_reason,
+              by: live.rejected_by,
+              at: live.rejected_at ? formatDisplayDate(live.rejected_at) : live.updated,
+            })}
           />
         </div>
 
@@ -234,6 +276,22 @@ function TicketWorkbench({ id }: { id: string }) {
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-foreground-700">{live.description}</p>
               </div>
+              {live.reference_url ? (
+                <div>
+                  <p className="text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
+                    Reference Link
+                  </p>
+                  <a
+                    href={live.reference_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:text-primary-800 cursor-pointer break-all"
+                  >
+                    <i className="ri-link text-[14px] leading-none"></i>
+                    {live.reference_url}
+                  </a>
+                </div>
+              ) : null}
               <div>
                 <p className="text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
                   Attachments
@@ -281,20 +339,21 @@ function TicketWorkbench({ id }: { id: string }) {
         <div className="min-w-0">
           <ActionPanel
             status={live.status}
-            statusDraft={statusDraft}
-            onStatusDraft={setStatusDraft}
-            onUpdateStatus={() => void handleUpdateStatus()}
             teamDraft={teamDraft}
             onTeamDraft={(value) => {
               setTeamDraft(value);
               const list = staffByTeam[value] ?? [];
-              setUserDraft(list[0] ?? user?.full_name ?? "");
+              setUserDraft(list.includes(userDraft) ? userDraft : "");
             }}
             userDraft={userDraft}
             onUserDraft={setUserDraft}
             priority={live.priority}
             onAssign={() => void handleAssign()}
-            assignees={staffByTeam[teamDraft] ?? []}
+            onStartWork={() => void handleStartWork()}
+            onResolve={() => void handleResolve()}
+            onReject={(reason) => void handleReject(reason)}
+            teams={teamOptions}
+            assignees={assigneeOptions}
           />
         </div>
       </div>

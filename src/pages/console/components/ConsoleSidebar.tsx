@@ -1,5 +1,5 @@
 /**
- * Staff nav: dashboard, queue, create, SLA, projects, reports, users, settings.
+ * Staff nav: dashboard, create, queue, projects, reports, users, settings.
  */
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -16,7 +16,6 @@ const NAV_PRIMARY: NavItem[] = [
   { label: "Create Request", to: "/console/create", icon: "ri-add-circle-line" },
   { label: "Ticket Queue", to: "/console/queue", icon: "ri-inbox-archive-line" },
   { label: "Projects", to: "/console/projects", icon: "ri-folders-line" },
-  { label: "SLA Monitor", to: "/console/sla", icon: "ri-timer-flash-line" },
   { label: "Reports", to: "/console/reports", icon: "ri-bar-chart-2-line" },
 ];
 

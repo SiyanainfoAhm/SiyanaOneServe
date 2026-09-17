@@ -70,7 +70,7 @@ export default function TicketTrendChart() {
           <Area
             type="monotone"
             dataKey="closed"
-            name="Closed"
+            name="Resolved"
             stroke="oklch(var(--accent-500))"
             strokeWidth={2}
             fill="url(#siyanaClosedGrad)"

@@ -67,46 +67,61 @@ export default function ReportsPage() {
   const summary = useMemo(() => {
     const total = tickets.length;
     const resolved = tickets.filter((ticket) => ticket.status === "Resolved" || ticket.status === "Closed").length;
-    const breached = tickets.filter((ticket) => ticket.sla === "Breached").length;
-    const metPercent = total ? Math.round(((total - breached) / total) * 100) : 0;
-    return { total, resolved, pending: total - resolved, breached, metPercent };
+    const rejected = tickets.filter((ticket) => ticket.status === "Rejected").length;
+    return { total, resolved, rejected, pending: total - resolved - rejected };
   }, [tickets]);
 
   const projectRows = useMemo(() => {
-    const map = new Map<string, { project: string; organization: string; total: number; resolved: number; breached: number }>();
+    const map = new Map<string, { project: string; organization: string; total: number; resolved: number; rejected: number }>();
     tickets.forEach((ticket) => {
       const entry = map.get(ticket.project) ?? {
         project: ticket.project,
         organization: ticket.organization,
         total: 0,
         resolved: 0,
-        breached: 0,
+        rejected: 0,
       };
       entry.total += 1;
       if (ticket.status === "Resolved" || ticket.status === "Closed") entry.resolved += 1;
-      if (ticket.sla === "Breached") entry.breached += 1;
+      if (ticket.status === "Rejected") entry.rejected += 1;
       map.set(ticket.project, entry);
     });
     return Array.from(map.values())
       .map((entry) => ({
         ...entry,
-        pending: entry.total - entry.resolved,
-        slaMet: entry.total ? Math.round(((entry.total - entry.breached) / entry.total) * 100) : 0,
+        pending: entry.total - entry.resolved - entry.rejected,
+        completion: entry.total ? Math.round((entry.resolved / entry.total) * 100) : 0,
       }))
       .sort((a, b) => b.total - a.total);
   }, [tickets]);
 
-  const slaByPriority = useMemo(() => {
+  const priorityMix = useMemo(() => {
     const order = ["Critical", "High", "Normal", "Low"];
-    const map = new Map<string, { priority: string; met: number; breached: number }>();
-    order.forEach((priority) => map.set(priority, { priority, met: 0, breached: 0 }));
+    const map = new Map<string, number>();
+    order.forEach((priority) => map.set(priority, 0));
+    tickets.forEach((ticket) => map.set(ticket.priority, (map.get(ticket.priority) ?? 0) + 1));
+    const total = tickets.length || 1;
+    return order.map((priority) => ({
+      priority,
+      value: map.get(priority) ?? 0,
+      percent: Math.round(((map.get(priority) ?? 0) / total) * 100),
+    }));
+  }, [tickets]);
+
+  const statusBreakdown = useMemo(() => {
+    const order = ["New", "Assigned", "In Progress", "Resolved", "Rejected"];
+    const map = new Map<string, number>();
+    order.forEach((status) => map.set(status, 0));
     tickets.forEach((ticket) => {
-      const entry = map.get(ticket.priority) ?? { priority: ticket.priority, met: 0, breached: 0 };
-      if (ticket.sla === "Breached") entry.breached += 1;
-      else entry.met += 1;
-      map.set(ticket.priority, entry);
+      const key = ticket.status === "Closed" ? "Resolved" : ticket.status;
+      map.set(key, (map.get(key) ?? 0) + 1);
     });
-    return order.map((priority) => map.get(priority)!).filter((row) => row.met + row.breached > 0);
+    const total = tickets.length || 1;
+    return order.map((status) => ({
+      status,
+      value: map.get(status) ?? 0,
+      percent: Math.round(((map.get(status) ?? 0) / total) * 100),
+    }));
   }, [tickets]);
 
   const teamRows = useMemo(() => {
@@ -124,22 +139,13 @@ export default function ReportsPage() {
       .sort((a, b) => b.assigned - a.assigned);
   }, [tickets]);
 
-  const categoryMix = useMemo(() => {
-    const map = new Map<string, number>();
-    tickets.forEach((ticket) => map.set(ticket.category, (map.get(ticket.category) ?? 0) + 1));
-    const total = tickets.length || 1;
-    return Array.from(map.entries())
-      .map(([name, value]) => ({ name, value: Math.round((value / total) * 100) }))
-      .sort((a, b) => b.value - a.value);
-  }, [tickets]);
-
   return (
     <ConsoleLayout>
       <PageHeader
         title="Reports"
         subtitle={
           scope === ALL_PROJECTS
-            ? "Live performance, SLA adherence and team productivity derived from the current request statuses"
+            ? "Live performance and team productivity derived from the current request statuses"
             : `Live performance reports · filtered to ${scope}`
         }
         actions={
@@ -170,14 +176,14 @@ export default function ReportsPage() {
 
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard label="Total Requests" value={String(summary.total)} delta="Across all projects" tone="primary" icon="ri-ticket-2-line" />
-        <StatCard label="Resolved" value={String(summary.resolved)} delta="Closed and completed" tone="accent" icon="ri-checkbox-circle-line" />
+        <StatCard label="Resolved" value={String(summary.resolved)} delta="Completed requests" tone="accent" icon="ri-checkbox-circle-line" />
         <StatCard label="Open Requests" value={String(summary.pending)} delta="Still being worked on" tone="info" icon="ri-loader-4-line" />
-        <StatCard label="SLA Breached" value={String(summary.breached)} delta={`${summary.metPercent}% within target`} tone="danger" icon="ri-alarm-warning-line" />
+        <StatCard label="Rejected" value={String(summary.rejected)} delta="Closed without completion" tone="danger" icon="ri-close-circle-line" />
       </div>
 
       <div className="mt-4 grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card className="xl:col-span-2">
-          <CardHeader title="Ticket Volume Trend" subtitle="Created vs Closed · last 6 months" />
+          <CardHeader title="Ticket Volume Trend" subtitle="Created vs Resolved · last 6 months" />
           <div className="mt-4 h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={volumeTrend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
@@ -187,27 +193,32 @@ export default function ReportsPage() {
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "oklch(var(--background-100))" }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="created" name="Created" fill="oklch(var(--primary-500))" radius={[4, 4, 0, 0]} maxBarSize={26} />
-                <Bar dataKey="closed" name="Closed" fill="oklch(var(--accent-500))" radius={[4, 4, 0, 0]} maxBarSize={26} />
+                <Bar dataKey="closed" name="Resolved" fill="oklch(var(--accent-500))" radius={[4, 4, 0, 0]} maxBarSize={26} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         <Card>
-          <CardHeader title="SLA Report" subtitle="Met vs breached by priority" />
+          <CardHeader title="Priority Mix" subtitle="Share of requests by priority" />
           <div className="mt-4 flex flex-col gap-3.5">
-            {slaByPriority.map((row) => {
-              const total = row.met + row.breached;
-              const percent = total ? Math.round((row.met / total) * 100) : 0;
+            {priorityMix.map((row) => {
+              const colors: Record<string, string> = {
+                Critical: "bg-[oklch(var(--status-danger))]",
+                High: "bg-[oklch(var(--status-warning))]",
+                Normal: "bg-primary-500",
+                Low: "bg-secondary-400",
+              };
               return (
                 <div key={row.priority}>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-foreground-700">{row.priority}</span>
-                    <span className="font-label font-semibold text-foreground-900">{percent}% met</span>
+                    <span className="font-label font-semibold text-foreground-900">
+                      {row.value} <span className="text-foreground-400">({row.percent}%)</span>
+                    </span>
                   </div>
-                  <div className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-background-200">
-                    <div className="h-full bg-accent-500" style={{ width: `${percent}%` }}></div>
-                    <div className="h-full bg-[oklch(var(--status-danger))]" style={{ width: `${100 - percent}%` }}></div>
+                  <div className="mt-1.5 h-2 rounded-full bg-background-200 overflow-hidden">
+                    <div className={`h-full rounded-full ${colors[row.priority] ?? "bg-primary-500"}`} style={{ width: `${row.percent}%` }}></div>
                   </div>
                 </div>
               );
@@ -229,7 +240,7 @@ export default function ReportsPage() {
                 <th className={HEAD}>Total</th>
                 <th className={HEAD}>Resolved</th>
                 <th className={HEAD}>Pending</th>
-                <th className={HEAD}>SLA Met</th>
+                <th className={HEAD}>Completion</th>
               </tr>
             </thead>
             <tbody>
@@ -244,11 +255,11 @@ export default function ReportsPage() {
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-16 rounded-full bg-background-200 overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${row.slaMet >= 90 ? "bg-accent-500" : row.slaMet >= 80 ? "bg-primary-500" : "bg-[oklch(var(--status-warning))]"}`}
-                          style={{ width: `${row.slaMet}%` }}
+                          className={`h-full rounded-full ${row.completion >= 80 ? "bg-accent-500" : row.completion >= 50 ? "bg-primary-500" : "bg-[oklch(var(--status-warning))]"}`}
+                          style={{ width: `${row.completion}%` }}
                         ></div>
                       </div>
-                      <span className="text-xs font-medium text-foreground-700">{row.slaMet}%</span>
+                      <span className="text-xs font-medium text-foreground-700">{row.completion}%</span>
                     </div>
                   </td>
                 </tr>
@@ -283,15 +294,22 @@ export default function ReportsPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Category Mix" subtitle="Share of requests by category" />
+          <CardHeader title="Status Breakdown" subtitle="Requests by current status" />
           <div className="mt-4 flex flex-col gap-3.5">
-            {categoryMix.map((row, index) => {
-              const colors = ["bg-primary-500", "bg-accent-500", "bg-secondary-400", "bg-[oklch(var(--status-warning))]"];
+            {statusBreakdown.map((row) => {
+              const colors: Record<string, string> = {
+                New: "bg-[oklch(var(--status-info))]",
+                Assigned: "bg-primary-500",
+                "In Progress": "bg-primary-400",
+                Resolved: "bg-accent-500",
+                Rejected: "bg-[oklch(var(--status-danger))]",
+              };
               return (
-                <div key={row.name} className="flex items-center gap-3">
-                  <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${colors[index % colors.length]}`}></span>
-                  <span className="flex-1 text-xs text-foreground-700">{row.name}</span>
-                  <span className="text-xs font-label font-semibold text-foreground-950">{row.value}%</span>
+                <div key={row.status} className="flex items-center gap-3">
+                  <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${colors[row.status] ?? "bg-primary-500"}`}></span>
+                  <span className="flex-1 text-xs text-foreground-700">{row.status}</span>
+                  <span className="text-xs font-label font-semibold text-foreground-950">{row.value}</span>
+                  <span className="w-9 text-right text-[11px] text-foreground-400">{row.percent}%</span>
                 </div>
               );
             })}

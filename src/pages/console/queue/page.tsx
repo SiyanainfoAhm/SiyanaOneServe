@@ -2,7 +2,7 @@
  * Operations ticket queue.
  *
  * Filters live tickets from AppData. Status tabs follow the lifecycle order.
- * Bulk Assign / Change Status buttons are visible but not wired to RPCs yet.
+ * Bulk Assign / Change Status apply to the selected rows.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -13,22 +13,21 @@ import Button from "@/components/base/Button";
 import Card from "@/components/base/Card";
 import QueueFilters from "@/pages/console/queue/components/QueueFilters";
 import QueueTable, { type SortKey } from "@/pages/console/queue/components/QueueTable";
-import { useConsoleTickets, updateTicketStatus } from "@/hooks/useConsoleTicketStore";
+import { useConsoleTickets, updateTicketStatus, assignTicket } from "@/hooks/useConsoleTicketStore";
 import { useProjects } from "@/hooks/useProjectStore";
 import { useAppData } from "@/context/AppDataContext";
 import { useProjectScope, setScopedProject, ALL_PROJECTS } from "@/hooks/useProjectScope";
 import { matchesDateRange, createDateRange, ALL_TIME, type DateRangeValue, todayIso } from "@/utils/date";
-import { useTicker } from "@/hooks/useTicker";
-
+import { workbenchStatuses } from "@/mocks/consoleTicket";
+import Select from "@/components/base/Select";
 const TODAY = todayIso();
 const PAGE_SIZE = 10;
 
-const STATUS_TABS = ["All", "Draft", "Need Approval", "New", "Assigned", "In Progress", "Resolved", "Closed", "Rejected"];
+const STATUS_TABS = ["All", "New", "Assigned", "In Progress", "Resolved", "Rejected"];
 
 const PRIORITY_ORDER: Record<string, number> = { Critical: 0, High: 1, Normal: 2, Low: 3 };
 
 export default function TicketQueuePage() {
-  const elapsed = useTicker();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project") ?? "";
   const queryParam = searchParams.get("q") ?? "";
@@ -49,6 +48,9 @@ export default function TicketQueuePage() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string[]>([]);
   const [toast, setToast] = useState("");
+  const [bulkStatus, setBulkStatus] = useState("Assigned");
+  const [bulkAssignee, setBulkAssignee] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     if (projectParam && projectOptions.includes(projectParam)) {
@@ -61,7 +63,29 @@ export default function TicketQueuePage() {
   }, [queryParam]);
 
   const rows = useConsoleTickets();
-  const { refresh, replaceTicket } = useAppData();
+  const { refresh, replaceTicket, users } = useAppData();
+
+  const assigneeOptions = useMemo(() => {
+    const names = new Set<string>(["All Assignees", "Unassigned"]);
+    users
+      .filter((user) => user.type === "staff" && user.status === "Active")
+      .forEach((user) => names.add(user.full_name || user.name));
+    rows.forEach((ticket) => {
+      if (ticket.assignee) names.add(ticket.assignee);
+    });
+    return Array.from(names);
+  }, [users, rows]);
+
+  const staffAssignees = useMemo(
+    () =>
+      users
+        .filter((user) => user.type === "staff" && user.status === "Active")
+        .map((user) => ({
+          name: user.full_name || user.name,
+          team: user.team || "Operations",
+        })),
+    [users],
+  );
 
   function showToast(text: string) {
     setToast(text);
@@ -86,7 +110,7 @@ export default function TicketQueuePage() {
       if (assignee !== "All Assignees" && ticket.assignee !== assignee) return false;
       if (!matchesDateRange(ticket.created, dateRange, TODAY)) return false;
       if (term) {
-        const haystack = `${ticket.id} ${ticket.title} ${ticket.project} ${ticket.organization} ${ticket.assignee} ${ticket.category}`.toLowerCase();
+        const haystack = `${ticket.id} ${ticket.title} ${ticket.project} ${ticket.organization} ${ticket.assignee}`.toLowerCase();
         if (!haystack.includes(term)) return false;
       }
       return true;
@@ -165,6 +189,46 @@ export default function TicketQueuePage() {
     }
   }
 
+  async function handleBulkStatus() {
+    if (selected.length === 0) return;
+    setBulkBusy(true);
+    try {
+      for (const id of selected) {
+        const ticket = await updateTicketStatus(id, bulkStatus);
+        replaceTicket(ticket);
+      }
+      showToast(`${selected.length} ticket${selected.length > 1 ? "s" : ""} moved to ${bulkStatus}`);
+      setSelected([]);
+      await refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Unable to update selected tickets.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleBulkAssign() {
+    if (selected.length === 0 || !bulkAssignee) return;
+    const staff = staffAssignees.find((item) => item.name === bulkAssignee);
+    setBulkBusy(true);
+    try {
+      for (const id of selected) {
+        const current = rows.find((ticket) => ticket.id === id);
+        const nextStatus =
+          current && current.status === "New" ? "Assigned" : undefined;
+        const ticket = await assignTicket(id, staff?.team ?? "Operations", bulkAssignee, nextStatus);
+        replaceTicket(ticket);
+      }
+      showToast(`${selected.length} ticket${selected.length > 1 ? "s" : ""} assigned to ${bulkAssignee}`);
+      setSelected([]);
+      await refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Unable to assign selected tickets.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   return (
     <ConsoleLayout>
       <PageHeader
@@ -226,6 +290,7 @@ export default function TicketQueuePage() {
           priority={priority}
           onPriority={updateFilter(setPriority)}
           assignee={assignee}
+          assigneeOptions={assigneeOptions}
           onAssignee={updateFilter(setAssignee)}
           dateRange={dateRange}
           onDateRange={(value) => {
@@ -242,10 +307,34 @@ export default function TicketQueuePage() {
               {selected.length} ticket{selected.length > 1 ? "s" : ""} selected
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" icon="ri-user-add-line">
+              <Select
+                options={["Assign to…", ...staffAssignees.map((item) => item.name)]}
+                value={bulkAssignee || "Assign to…"}
+                onChange={(event) => setBulkAssignee(event.target.value === "Assign to…" ? "" : event.target.value)}
+                containerClassName="w-[170px]"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                icon="ri-user-add-line"
+                onClick={() => void handleBulkAssign()}
+                disabled={!bulkAssignee || bulkBusy}
+              >
                 Assign
               </Button>
-              <Button variant="outline" size="sm" icon="ri-exchange-line">
+              <Select
+                options={workbenchStatuses}
+                value={bulkStatus}
+                onChange={(event) => setBulkStatus(event.target.value)}
+                containerClassName="w-[150px]"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                icon="ri-exchange-line"
+                onClick={() => void handleBulkStatus()}
+                disabled={bulkBusy}
+              >
                 Change Status
               </Button>
             </div>
@@ -268,7 +357,6 @@ export default function TicketQueuePage() {
           sort={sort}
           onSort={handleSort}
           onStatusChange={handleStatusChange}
-          elapsed={elapsed}
         />
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-background-200 px-5 py-3.5 sm:flex-row">

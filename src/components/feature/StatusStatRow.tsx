@@ -21,10 +21,10 @@ interface StatusStatRowProps {
  * render this exact component so the two dashboards always look identical.
  */
 export default function StatusStatRow({ counts }: StatusStatRowProps) {
-  const total = STATUS_ORDER.reduce((sum, status) => sum + (counts[status] ?? 0), 0);
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       <div className="rounded-lg border border-background-200 bg-background-50 p-3.5">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-primary-100 text-primary-700">

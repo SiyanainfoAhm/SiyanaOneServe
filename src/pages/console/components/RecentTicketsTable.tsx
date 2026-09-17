@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useConsoleTickets } from "@/hooks/useConsoleTicketStore";
 import type { QueueTicket } from "@/mocks/consoleQueue";
 import { useProjectScope, filterByProject } from "@/hooks/useProjectScope";
-import { TicketStatusBadge, PriorityBadge, SlaBadge } from "@/components/base/StatusBadge";
+import { TicketStatusBadge, PriorityBadge } from "@/components/base/StatusBadge";
 
 interface RecentTicketsTableProps {
   tickets?: QueueTicket[];
@@ -33,9 +33,6 @@ export default function RecentTicketsTable({ tickets }: RecentTicketsTableProps 
             </th>
             <th className="px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
               Priority
-            </th>
-            <th className="px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
-              SLA
             </th>
             <th className="px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
               Date
@@ -72,9 +69,6 @@ export default function RecentTicketsTable({ tickets }: RecentTicketsTableProps 
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <PriorityBadge priority={ticket.priority} />
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
-                <SlaBadge sla={ticket.sla} />
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-500">
                 {ticket.created}

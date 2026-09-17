@@ -85,7 +85,6 @@ export function makeProject(overrides: Partial<ProjectRecord> = {}): ProjectReco
     totalTickets: 12,
     slaHealth: 92,
     progress: 40,
-    slaHours: { Critical: 8, High: 24, Normal: 48, Low: 96 },
     ...overrides,
   };
 }

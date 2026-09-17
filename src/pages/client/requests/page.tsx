@@ -10,7 +10,7 @@ import Tabs from "@/components/base/Tabs";
 import Select from "@/components/base/Select";
 import CustomDateRangeFields from "@/components/feature/CustomDateRangeFields";
 import EmptyState from "@/components/base/EmptyState";
-import { TicketStatusBadge, PriorityBadge, SlaBadge } from "@/components/base/StatusBadge";
+import { TicketStatusBadge, PriorityBadge } from "@/components/base/StatusBadge";
 import { useClientRequests } from "@/hooks/useClientRequestStore";
 import { useProjectScope, setScopedProject } from "@/hooks/useProjectScope";
 import { createDateRange, matchesDateRange, CUSTOM_RANGE, ALL_TIME, type DateRangeValue, todayIso } from "@/utils/date";
@@ -23,7 +23,7 @@ const DATE_OPTIONS = ["All Time", "Today", "Last 7 Days", "Last 30 Days", "Custo
 
 const HEAD = "px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500";
 
-const STATUS_TABS = ["All", "Draft", "Need Approval", "New", "Assigned", "In Progress", "Resolved", "Closed", "Rejected"];
+const STATUS_TABS = ["All", "New", "Assigned", "In Progress", "Resolved", "Rejected"];
 
 export default function ClientMyRequestsPage() {
   const [searchParams] = useSearchParams();
@@ -57,7 +57,7 @@ export default function ClientMyRequestsPage() {
       if (project !== "All Projects" && request.project !== project) return false;
       if (!matchesDateRange(request.created, dateRange, TODAY)) return false;
       if (term) {
-        const haystack = `${request.id} ${request.title} ${request.requestType} ${request.category} ${request.project}`.toLowerCase();
+        const haystack = `${request.id} ${request.title} ${request.project}`.toLowerCase();
         if (!haystack.includes(term)) return false;
       }
       return true;
@@ -137,15 +137,13 @@ export default function ClientMyRequestsPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse">
+            <table className="w-full min-w-[860px] border-collapse">
               <thead>
                 <tr className="border-b border-background-200 bg-background-50">
                   <th className={HEAD}>Request ID</th>
                   <th className={HEAD}>Request</th>
-                  <th className={HEAD}>Type</th>
                   <th className={HEAD}>Status</th>
                   <th className={HEAD}>Priority</th>
-                  <th className={HEAD}>SLA</th>
                   <th className={HEAD}>Last Updated</th>
                   <th className="px-4 py-2.5"></th>
                 </tr>
@@ -161,7 +159,7 @@ export default function ClientMyRequestsPage() {
                         {request.id}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 max-w-[300px]">
+                    <td className="px-4 py-3 max-w-[340px]">
                       <Link
                         to={`/client/requests/${request.id}`}
                         className="block truncate text-sm font-medium text-foreground-900 hover:text-primary-700 transition-colors cursor-pointer"
@@ -170,35 +168,21 @@ export default function ClientMyRequestsPage() {
                       </Link>
                       <span className="block truncate text-[11px] text-foreground-500">{request.project}</span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-600">{request.requestType}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <TicketStatusBadge status={request.status} />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <PriorityBadge priority={request.priority} />
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <SlaBadge sla={request.sla} />
-                    </td>
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-500">{request.updated}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
-                      {request.waitingOnMe ? (
-                        <Link
-                          to={`/client/requests/${request.id}`}
-                          className="inline-flex items-center gap-1 rounded-full border border-[oklch(var(--status-warning)/0.3)] bg-[oklch(var(--status-warning)/0.12)] px-2 py-0.5 text-[11px] font-label font-semibold text-[oklch(var(--status-warning))] whitespace-nowrap"
-                        >
-                          <i className="ri-user-received-line text-[12px] leading-none"></i>
-                          Action needed
-                        </Link>
-                      ) : (
-                        <Link
-                          to={`/client/requests/${request.id}`}
-                          className="inline-flex w-8 h-8 items-center justify-center rounded-md border border-background-200 text-foreground-500 hover:bg-background-100 hover:text-foreground-900 transition-colors cursor-pointer"
-                          aria-label={`Open ${request.id}`}
-                        >
-                          <i className="ri-arrow-right-line text-[15px] leading-none"></i>
-                        </Link>
-                      )}
+                      <Link
+                        to={`/client/requests/${request.id}`}
+                        className="inline-flex w-8 h-8 items-center justify-center rounded-md border border-background-200 text-foreground-500 hover:bg-background-100 hover:text-foreground-900 transition-colors cursor-pointer"
+                        aria-label={`Open ${request.id}`}
+                      >
+                        <i className="ri-arrow-right-line text-[15px] leading-none"></i>
+                      </Link>
                     </td>
                   </tr>
                 ))}

@@ -30,10 +30,6 @@ export default function ForgotPasswordModal({ email, onClose }: ForgotPasswordMo
     setSaving(true);
     try {
       const result = await api.forgotPassword(value.trim());
-      if (!result?.ok) {
-        setError(result?.error || "No OneServe account uses this email.");
-        return;
-      }
       setPortal(result.portal ?? "");
       setSent(true);
     } catch (err) {

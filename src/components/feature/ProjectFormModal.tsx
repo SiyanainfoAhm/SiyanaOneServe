@@ -6,11 +6,8 @@ import { useMemo, useState } from "react";
 import Select from "@/components/base/Select";
 import Button from "@/components/base/Button";
 import {
-  projectCategoryOptions,
   projectManagerOptions,
   projectEditableStatusOptions,
-  slaPriorityOptions,
-  defaultSlaHours,
   type Project,
 } from "@/mocks/consoleProjects";
 import { useAppData } from "@/context/AppDataContext";
@@ -19,9 +16,7 @@ export interface ProjectFormValues {
   name: string;
   organization: string;
   status: string;
-  category: string;
   manager: string;
-  slaHours: Record<string, number>;
 }
 
 const ADD_ORG_VALUE = "+ Add new organization";
@@ -52,11 +47,7 @@ export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: P
   const [organization, setOrganization] = useState(initial?.organization ?? liveOrgs[0]);
   const [newOrg, setNewOrg] = useState("");
   const [status, setStatus] = useState<string>(initial?.status ?? "Active");
-  const [category, setCategory] = useState(initial?.category ?? projectCategoryOptions[0]);
   const [manager, setManager] = useState(initial?.manager ?? managerOptions[0]);
-  const [slaHours, setSlaHours] = useState<Record<string, number>>({
-    ...(initial?.slaHours ?? defaultSlaHours),
-  });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -80,9 +71,7 @@ export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: P
         name: name.trim(),
         organization: finalOrg,
         status: mode === "create" ? "Active" : status,
-        category,
         manager,
-        slaHours: { ...slaHours },
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save this project.");
@@ -101,8 +90,8 @@ export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: P
             </h3>
             <p className="mt-0.5 text-xs text-foreground-500">
               {mode === "create"
-                ? "Set up a project, its organization and SLA targets by priority"
-                : "Update the project details, status, owner and SLA targets"}
+                ? "Set up a project and its organization"
+                : "Update the project details, status and owner"}
             </p>
           </div>
           <button
@@ -162,13 +151,6 @@ export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: P
               </div>
             )}
             <Select
-              label="Primary Category"
-              options={projectCategoryOptions}
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              icon="ri-apps-2-line"
-            />
-            <Select
               label="Project Manager"
               options={managerOptions}
               value={manager}
@@ -198,32 +180,6 @@ export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: P
               </p>
             </div>
           ) : null}
-
-          <div className="rounded-lg border border-background-200 bg-background-100 p-4">
-            <p className="text-xs font-label font-semibold text-foreground-800">SLA targets by priority</p>
-            <p className="mt-0.5 text-[11px] text-foreground-500">
-              These resolution windows apply to every ticket raised in this project.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {slaPriorityOptions.map((priority) => (
-                <div key={priority}>
-                  <label htmlFor={`sla-${priority}`} className="mb-1.5 block text-[11px] font-label font-semibold text-foreground-700">
-                    {priority} (hrs)
-                  </label>
-                  <input
-                    id={`sla-${priority}`}
-                    type="number"
-                    min={1}
-                    value={slaHours[priority]}
-                    onChange={(event) =>
-                      setSlaHours((prev) => ({ ...prev, [priority]: Number(event.target.value) || 0 }))
-                    }
-                    className="h-10 w-full rounded-md border border-background-300 bg-background-50 px-3 text-sm text-foreground-900 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
 
           {error ? (
             <p className="flex items-start gap-1.5 rounded-md border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.06)] px-3 py-2 text-[11px] text-[oklch(var(--status-danger))]">

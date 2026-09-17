@@ -51,7 +51,7 @@ export default function GlobalSearch({ mode, placeholder }: GlobalSearchProps) {
     const ticketHits: SearchHit[] = tickets
       .filter((ticket) =>
         matches(
-          `${ticket.id} ${ticket.ticket_id} ${ticket.ticket_no} ${ticket.title} ${ticket.project} ${ticket.assignee} ${ticket.organization} ${ticket.category} ${ticket.requester}`,
+          `${ticket.id} ${ticket.ticket_id} ${ticket.ticket_no} ${ticket.title} ${ticket.project} ${ticket.assignee} ${ticket.organization} ${ticket.requester}`,
           term,
         ),
       )

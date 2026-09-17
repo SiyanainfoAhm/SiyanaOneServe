@@ -14,7 +14,7 @@ import { makeTicket } from "@/test/fixtures";
 describe("liveStats", () => {
   it("treats Resolved / Closed / Rejected as not open", () => {
     expect(isOpenStatus("New")).toBe(true);
-    expect(isOpenStatus("Need Approval")).toBe(true);
+    expect(isOpenStatus("Assigned")).toBe(true);
     expect(isOpenStatus("Resolved")).toBe(false);
     expect(isOpenStatus("Closed")).toBe(false);
     expect(isOpenStatus("Rejected")).toBe(false);

@@ -19,7 +19,7 @@ import { useProjects } from "@/hooks/useProjectStore";
 import { useProjectScope, ALL_PROJECTS } from "@/hooks/useProjectScope";
 import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/services/api";
-import { isOpenStatus, projectNamesOf } from "@/utils/liveStats";
+import { projectNamesOf } from "@/utils/liveStats";
 import type { SessionUser } from "@/types/oneserve";
 
 const STATUS_TONE: Record<string, Tone> = {
@@ -43,7 +43,7 @@ const ROLE_OPTIONS = [
 
 const HEAD = "px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500";
 
-function toConsoleUser(user: SessionUser, openTickets: number): ConsoleUser {
+function toConsoleUser(user: SessionUser): ConsoleUser {
   return {
     id: user.id,
     name: user.full_name || user.name,
@@ -54,7 +54,7 @@ function toConsoleUser(user: SessionUser, openTickets: number): ConsoleUser {
     organization: user.organization,
     type: user.type,
     status: user.status === "Inactive" ? "Inactive" : "Active",
-    openTickets,
+    openTickets: 0,
     lastActive: user.last_active ?? "—",
     projects: projectNamesOf(user.projects as Array<string | { name: string }>),
   };
@@ -63,7 +63,7 @@ function toConsoleUser(user: SessionUser, openTickets: number): ConsoleUser {
 export default function UsersPage() {
   const [searchParams] = useSearchParams();
   const queryParam = searchParams.get("q") ?? "";
-  const { users: liveUsers, tickets, refresh } = useAppData();
+  const { users: liveUsers, refresh } = useAppData();
   const scope = useProjectScope();
   const projects = useProjects();
   const [tab, setTab] = useState("All");
@@ -83,18 +83,7 @@ export default function UsersPage() {
     window.setTimeout(() => setToast(""), 2600);
   }
 
-  const users = useMemo(
-    () =>
-      liveUsers.map((user) =>
-        toConsoleUser(
-          user,
-          tickets.filter(
-            (ticket) => ticket.assignee === (user.full_name || user.name) && isOpenStatus(ticket.status),
-          ).length,
-        ),
-      ),
-    [liveUsers, tickets],
-  );
+  const users = useMemo(() => liveUsers.map(toConsoleUser), [liveUsers]);
 
   const counts = useMemo(
     () => ({
@@ -221,9 +210,7 @@ export default function UsersPage() {
                   <th className={HEAD}>User</th>
                   <th className={HEAD}>Role</th>
                   <th className={HEAD}>Team / Organization</th>
-                  <th className={HEAD}>Projects</th>
                   <th className={HEAD}>Status</th>
-                  <th className={HEAD}>Open Tickets</th>
                   <th className={HEAD}>Last Active</th>
                   <th className="px-4 py-2.5"></th>
                 </tr>
@@ -244,20 +231,9 @@ export default function UsersPage() {
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-600">
                       {user.type === "staff" ? user.team : user.organization}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-600">
-                      {user.projects && user.projects.length > 0 ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary-100 px-2.5 py-1 text-[11px] font-medium text-secondary-900">
-                          <i className="ri-folders-line text-[12px] leading-none"></i>
-                          {user.projects.length}
-                        </span>
-                      ) : (
-                        <span className="text-foreground-400">—</span>
-                      )}
-                    </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <StatusBadge label={user.status} tone={STATUS_TONE[user.status] ?? "neutral"} />
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground-800">{user.openTickets}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-500">{user.lastActive}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       <button
