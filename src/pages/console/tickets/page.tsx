@@ -306,6 +306,7 @@ function TicketWorkbench({ id }: { id: string }) {
                     filePath: file.file_path,
                   }))}
                   emptyText="No attachments on this request."
+                  readOnly={notesLocked}
                   onChange={(ticket) => {
                     setDetail(ticket);
                     replaceTicket(ticket);

@@ -8,7 +8,6 @@ interface NavItem {
   label: string;
   to: string;
   icon: string;
-  count?: number;
 }
 
 const NAV_PRIMARY: NavItem[] = [
@@ -45,15 +44,6 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void })
             <i className={`${item.icon} text-[17px] leading-none`}></i>
           </span>
           <span className="truncate">{item.label}</span>
-          {typeof item.count === "number" ? (
-            <span
-              className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold font-label ${
-                isActive ? "bg-primary-600 text-background-50" : "bg-background-200 text-foreground-600"
-              }`}
-            >
-              {item.count}
-            </span>
-          ) : null}
         </>
       )}
     </NavLink>
