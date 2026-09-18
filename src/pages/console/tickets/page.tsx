@@ -22,7 +22,7 @@ import { api } from "@/services/api";
 import { formatDisplayDate } from "@/utils/date";
 import type { TicketRecord } from "@/types/oneserve";
 import { USER_TEAMS } from "@/pages/console/users/components/UserFormModal";
-import { rejectionFromEvents } from "@/utils/ticketStats";
+import { isClosedStatus, rejectionFromEvents } from "@/utils/ticketStats";
 
 function initialsOf(name: string): string {
   return name
@@ -144,6 +144,7 @@ function TicketWorkbench({ id }: { id: string }) {
   }
 
   const live = detail ?? row;
+  const notesLocked = isClosedStatus(live.status);
   const notes: NoteEntry[] = (live.messages ?? []).map((message) => ({
     id: message.id,
     author: message.author,
@@ -155,7 +156,7 @@ function TicketWorkbench({ id }: { id: string }) {
   }));
 
   async function handleSend() {
-    if (!draft.trim()) return;
+    if (notesLocked || !draft.trim()) return;
     // Workbench "Notes" tab is internal; other conversation tabs are client-visible.
     const visibility = centerTab === "notes" ? "internal" : "client";
     const ticket = await api.addMessage(id, draft.trim(), visibility);
@@ -317,7 +318,18 @@ function TicketWorkbench({ id }: { id: string }) {
           ) : null}
 
           {centerTab === "notes" ? (
-            <NotesPanel notes={notes} draft={draft} onDraft={setDraft} onSend={() => void handleSend()} />
+            <NotesPanel
+              notes={notes}
+              draft={draft}
+              onDraft={setDraft}
+              onSend={() => void handleSend()}
+              readOnly={notesLocked}
+              readOnlyHint={
+                live.status.toLowerCase() === "rejected"
+                  ? "This ticket is rejected. Notes are read-only."
+                  : "This ticket is resolved. Notes are read-only."
+              }
+            />
           ) : null}
 
           {centerTab === "history" ? (

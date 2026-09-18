@@ -2,11 +2,13 @@
  * Invite or edit a user.
  *
  * Government Nodal Officer / Government Requester → client portal; every other role → console.
- * Invite password = first 3 org letters + first 3 first-name letters + @ + day.
+ * Organization and projects appear only for government roles.
+ * Siyana staff get Team only; they are saved under the Siyana organization.
  */
 import { useMemo, useState } from "react";
 import Select from "@/components/base/Select";
 import Button from "@/components/base/Button";
+import ModalOverlay from "@/components/base/ModalOverlay";
 import { useProjects } from "@/hooks/useProjectStore";
 import { useAppData } from "@/context/AppDataContext";
 import { generateInvitePassword } from "@/utils/credentials";
@@ -27,8 +29,12 @@ export const USER_ROLES = [
 
 export const USER_TEAMS = ["Operations", "Content Team", "Development Team", "QA Team"];
 const GOVERNMENT_ROLES = ["Government Nodal Officer", "Government Requester"]; // client portal only
-const BASE_ORG_OPTIONS = ["Siyana"];
+const STAFF_ORG = "Siyana";
 const STATUS_OPTIONS: ConsoleUser["status"][] = ["Active", "Inactive"];
+
+function isGovernmentRole(value: string) {
+  return GOVERNMENT_ROLES.includes(value);
+}
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(" ").filter(Boolean);
@@ -47,18 +53,26 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
   const projects = useProjects();
   const { organizations } = useAppData();
 
-  const orgOptions = useMemo(() => {
-    const set = new Set<string>(organizations.map((org) => org.name));
-    if (user) set.add(user.organization);
-    projects.forEach((project) => set.add(project.organization));
-    BASE_ORG_OPTIONS.forEach((org) => set.add(org));
-    return Array.from(set);
-  }, [projects, user, organizations]);
+  const govOrgOptions = useMemo(() => {
+    const names = new Set<string>();
+    organizations.forEach((org) => {
+      if (org.name && org.name.toLowerCase() !== STAFF_ORG.toLowerCase()) names.add(org.name);
+    });
+    projects.forEach((project) => {
+      if (project.organization && project.organization.toLowerCase() !== STAFF_ORG.toLowerCase()) {
+        names.add(project.organization);
+      }
+    });
+    if (user && isGovernmentRole(user.role) && user.organization) names.add(user.organization);
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [organizations, projects, user]);
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [role, setRole] = useState(user?.role ?? USER_ROLES[0]);
-  const [organization, setOrganization] = useState(user?.organization ?? orgOptions[0]);
+  const [organization, setOrganization] = useState(
+    user && isGovernmentRole(user.role) ? user.organization : STAFF_ORG,
+  );
   const [team, setTeam] = useState(
     user && USER_TEAMS.includes(user.team) ? user.team : USER_TEAMS[0],
   );
@@ -68,12 +82,36 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState<{ user: ConsoleUser; password: string } | null>(null);
 
-  const isGovernment = GOVERNMENT_ROLES.includes(role);
+  const isGovernment = isGovernmentRole(role);
   const isCreate = mode === "create";
+  const orgProjects = useMemo(
+    () => (organization ? projects.filter((project) => project.organization === organization) : []),
+    [projects, organization],
+  );
 
   function toggleProject(projectName: string) {
     setSelectedProjects((prev) =>
       prev.includes(projectName) ? prev.filter((item) => item !== projectName) : [...prev, projectName],
+    );
+  }
+
+  function handleRoleChange(nextRole: string) {
+    const nextGov = isGovernmentRole(nextRole);
+    setRole(nextRole);
+    if (nextGov === isGovernment) return;
+    if (nextGov) {
+      setOrganization("");
+      setSelectedProjects([]);
+    } else {
+      setOrganization(STAFF_ORG);
+      setSelectedProjects([]);
+    }
+  }
+
+  function handleOrgChange(nextOrg: string) {
+    setOrganization(nextOrg);
+    setSelectedProjects((prev) =>
+      prev.filter((name) => projects.some((project) => project.name === name && project.organization === nextOrg)),
     );
   }
 
@@ -86,7 +124,12 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
       setError("Please enter a valid email address.");
       return;
     }
+    if (isGovernment && !organization.trim()) {
+      setError("Please choose an organization.");
+      return;
+    }
 
+    const finalOrg = isGovernment ? organization : STAFF_ORG;
     const nextUser: ConsoleUser = {
       id: user?.id ?? `u-${Date.now()}`,
       name: name.trim(),
@@ -94,18 +137,18 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
       email: email.trim(),
       role,
       team: isGovernment ? "—" : team,
-      organization,
+      organization: finalOrg,
       type: isGovernment ? "government" : "staff",
       status: isCreate ? "Active" : status,
       openTickets: user?.openTickets ?? 0,
       lastActive: isCreate ? "Invite pending" : user?.lastActive ?? "Just now",
-      projects: selectedProjects,
+      projects: isGovernment ? selectedProjects : [],
     };
 
     setSaving(true);
     try {
       if (isCreate) {
-        const password = generateInvitePassword(name.trim(), organization);
+        const password = generateInvitePassword(name.trim(), finalOrg);
         await onSubmit(nextUser, password);
         setSent({ user: nextUser, password });
         return;
@@ -123,8 +166,8 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
     "h-10 w-full rounded-md border border-background-300 bg-background-50 px-3 text-sm text-foreground-900 placeholder:text-foreground-400 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground-950/40 p-4 sm:items-center">
-      <div className="w-full max-w-xl rounded-lg border border-background-200 bg-background-50">
+    <ModalOverlay>
+      <div className="w-full max-w-xl rounded-lg border border-background-200 bg-background-50 shadow-lg">
         <div className="flex items-center justify-between border-b border-background-200 px-5 py-4">
           <div>
             <h3 className="font-heading text-[15px] font-semibold text-foreground-950">
@@ -179,10 +222,12 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
                   <span className="text-xs text-foreground-500">Email</span>
                   <span className="font-medium text-foreground-900">{sent.user.email}</span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-foreground-500">Organization</span>
-                  <span className="font-medium text-foreground-900">{sent.user.organization}</span>
-                </div>
+                {isGovernmentRole(sent.user.role) ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-foreground-500">Organization</span>
+                    <span className="font-medium text-foreground-900">{sent.user.organization}</span>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-3 rounded-md border border-accent-200 bg-accent-100/70 px-3 py-2">
                   <span className="text-xs font-medium text-accent-900">Unique password</span>
                   <span className="font-mono text-sm font-semibold tracking-wide text-accent-900">{sent.password}</span>
@@ -243,17 +288,19 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
                   label="Role"
                   options={USER_ROLES}
                   value={role}
-                  onChange={(event) => setRole(event.target.value)}
+                  onChange={(event) => handleRoleChange(event.target.value)}
                   icon="ri-shield-user-line"
                 />
-                <Select
-                  label="Organization"
-                  options={orgOptions}
-                  value={organization}
-                  onChange={(event) => setOrganization(event.target.value)}
-                  icon="ri-building-2-line"
-                />
-                {isGovernment ? null : (
+                {isGovernment ? (
+                  <Select
+                    label="Organization"
+                    options={govOrgOptions}
+                    value={organization}
+                    onChange={(event) => handleOrgChange(event.target.value)}
+                    icon="ri-building-2-line"
+                    placeholder="Select organization"
+                  />
+                ) : (
                   <Select
                     label="Team"
                     options={USER_TEAMS}
@@ -274,47 +321,52 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
               </div>
 
               {isGovernment ? (
-                <p className="flex items-start gap-1.5 rounded-md border border-secondary-200 bg-secondary-100/70 px-3 py-2 text-[11px] text-secondary-900">
-                  <i className="ri-government-line text-[14px] leading-none mt-0.5"></i>
-                  Government roles do not belong to a team, so no team is assigned.
-                </p>
-              ) : null}
-
-              <div className="rounded-lg border border-background-200 bg-background-100 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-label font-semibold text-foreground-800">Assign projects (optional)</p>
-                  <span className="text-[11px] text-foreground-500">{selectedProjects.length} selected</span>
-                </div>
-                <p className="mt-0.5 text-[11px] text-foreground-500">
-                  Choose the projects this user should have access to.
-                </p>
-                <div className="mt-3 max-h-[200px] overflow-y-auto pr-1">
-                  <div className="flex flex-col gap-1.5">
-                    {projects.map((project) => {
-                      const checked = selectedProjects.includes(project.name);
-                      return (
-                        <label
-                          key={project.id}
-                          className="flex cursor-pointer items-center gap-3 rounded-md border border-background-200 bg-background-50 px-3 py-2 transition-colors hover:border-primary-300"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleProject(project.name)}
-                            className="h-4 w-4 cursor-pointer accent-[oklch(var(--primary-500))]"
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm text-foreground-900">{project.name}</span>
-                            <span className="block truncate text-[11px] text-foreground-500">
-                              {project.organization} · {project.code}
-                            </span>
-                          </span>
-                        </label>
-                      );
-                    })}
+                <div className="rounded-lg border border-background-200 bg-background-100 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-label font-semibold text-foreground-800">Assign projects (optional)</p>
+                    <span className="text-[11px] text-foreground-500">{selectedProjects.length} selected</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-foreground-500">
+                    {organization
+                      ? `Only projects for ${organization} are listed.`
+                      : "Choose an organization to see its projects."}
+                  </p>
+                  <div className="mt-3 max-h-[200px] overflow-y-auto pr-1">
+                    {!organization ? (
+                      <p className="rounded-md border border-dashed border-background-300 bg-background-50 px-3 py-4 text-center text-[11px] text-foreground-500">
+                        Select an organization first.
+                      </p>
+                    ) : orgProjects.length === 0 ? (
+                      <p className="rounded-md border border-dashed border-background-300 bg-background-50 px-3 py-4 text-center text-[11px] text-foreground-500">
+                        No projects found for this organization.
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        {orgProjects.map((project) => {
+                          const checked = selectedProjects.includes(project.name);
+                          return (
+                            <label
+                              key={project.id}
+                              className="flex cursor-pointer items-center gap-3 rounded-md border border-background-200 bg-background-50 px-3 py-2 transition-colors hover:border-primary-300"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleProject(project.name)}
+                                className="h-4 w-4 cursor-pointer accent-[oklch(var(--primary-500))]"
+                              />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm text-foreground-900">{project.name}</span>
+                                <span className="block truncate text-[11px] text-foreground-500">{project.code}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              ) : null}
 
               {error ? (
                 <p className="flex items-start gap-1.5 rounded-md border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.06)] px-3 py-2 text-[11px] text-[oklch(var(--status-danger))]">
@@ -340,6 +392,6 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
           </>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

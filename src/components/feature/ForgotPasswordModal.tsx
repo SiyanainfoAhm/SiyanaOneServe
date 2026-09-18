@@ -6,6 +6,7 @@
  */
 import { useState } from "react";
 import Button from "@/components/base/Button";
+import ModalOverlay from "@/components/base/ModalOverlay";
 import { api } from "@/services/api";
 
 interface ForgotPasswordModalProps {
@@ -40,8 +41,8 @@ export default function ForgotPasswordModal({ email, onClose }: ForgotPasswordMo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground-950/40 p-4 sm:items-center">
-      <div className="w-full max-w-md rounded-lg border border-background-200 bg-background-50">
+    <ModalOverlay>
+      <div className="w-full max-w-md rounded-lg border border-background-200 bg-background-50 shadow-lg">
         <div className="flex items-center justify-between border-b border-background-200 px-5 py-4">
           <div>
             <h3 className="font-heading text-[15px] font-semibold text-foreground-950">
@@ -114,6 +115,6 @@ export default function ForgotPasswordModal({ email, onClose }: ForgotPasswordMo
           </form>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

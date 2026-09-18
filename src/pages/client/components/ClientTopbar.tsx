@@ -67,7 +67,7 @@ export default function ClientTopbar({ onMenu }: { onMenu: () => void }) {
             className="hidden md:inline-flex"
             onClick={() => navigate("/client/create")}
           >
-            New Request
+            Create Request
           </Button>
 
           <div className="relative" ref={notifRef}>

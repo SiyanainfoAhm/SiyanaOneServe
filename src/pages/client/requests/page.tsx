@@ -67,7 +67,7 @@ export default function ClientMyRequestsPage() {
   return (
     <ClientLayout>
       <ClientPageHeader
-        title="My Requests"
+        title="Project Request"
         subtitle={`All ${requests.length} service requests raised by ${user?.organization ?? "your department"} — track, filter and review each one.`}
         actions={
           <Link
@@ -75,7 +75,7 @@ export default function ClientMyRequestsPage() {
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-primary-600 bg-primary-600 px-4 text-sm font-label font-medium text-background-50 hover:bg-primary-700 transition-colors cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-[15px] leading-none"></i>
-              New Request
+              Create Request
             </Link>
         }
       />

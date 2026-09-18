@@ -35,4 +35,57 @@ describe("NotesPanel", () => {
     await user.click(screen.getByRole("button", { name: "Add Note" }));
     expect(onSend).toHaveBeenCalled();
   });
+
+  it("hides the composer when the ticket is resolved", () => {
+    render(
+      <NotesPanel
+        notes={[
+          {
+            id: "n1",
+            author: "Arjun Mehta",
+            initials: "AM",
+            role: "Operations Admin",
+            body: "Work completed",
+            time: "10:00",
+            side: "team",
+          },
+        ]}
+        draft=""
+        onDraft={vi.fn()}
+        onSend={vi.fn()}
+        readOnly
+        readOnlyHint="This ticket is resolved. Notes are read-only."
+      />,
+    );
+    expect(screen.getByText("Work completed")).toBeInTheDocument();
+    expect(screen.getByText("This ticket is resolved. Notes are read-only.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add Note" })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Add a note describing/i)).not.toBeInTheDocument();
+  });
+
+  it("hides the composer when the ticket is rejected", () => {
+    render(
+      <NotesPanel
+        notes={[
+          {
+            id: "n1",
+            author: "Arjun Mehta",
+            initials: "AM",
+            role: "Operations Admin",
+            body: "Out of scope",
+            time: "10:00",
+            side: "team",
+          },
+        ]}
+        draft=""
+        onDraft={vi.fn()}
+        onSend={vi.fn()}
+        readOnly
+        readOnlyHint="This ticket is rejected. Notes are read-only."
+      />,
+    );
+    expect(screen.getByText("Out of scope")).toBeInTheDocument();
+    expect(screen.getByText("This ticket is rejected. Notes are read-only.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add Note" })).not.toBeInTheDocument();
+  });
 });

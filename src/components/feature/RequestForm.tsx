@@ -1,7 +1,7 @@
 /**
  * Shared create-ticket form for both portals.
  *
- * Latest design: org/project from the account, then details, required files,
+ * Latest design: org/project from the account, then details, optional files,
  * required notes, and a locked-after-submit priority. Status starts at New.
  * Files upload to Azure only after the ticket UUID exists.
  */
@@ -159,10 +159,6 @@ export default function RequestForm({ mode }: { mode: RequestFormMode }) {
     }
     if (!link.trim()) {
       setError("Please provide a reference link for this request.");
-      return;
-    }
-    if (files.filter((file) => file.status === "Ready").length === 0) {
-      setError("Please attach at least one supporting document.");
       return;
     }
     if (!note.trim()) {
@@ -329,7 +325,7 @@ export default function RequestForm({ mode }: { mode: RequestFormMode }) {
             step={3}
             icon="ri-attachment-2"
             title="Attachments"
-            subtitle="Add supporting documents, artwork or reference sheets"
+            subtitle="Optional — add supporting documents, artwork or reference sheets"
           />
           <div className="mt-4">
             <AttachmentDropzone files={files} onChange={setFiles} />

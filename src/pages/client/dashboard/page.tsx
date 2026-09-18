@@ -33,28 +33,15 @@ export default function ClientDashboard() {
 
   return (
     <ClientLayout>
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0">
-          <h1 className="font-heading text-xl font-bold text-foreground-950">
-            Welcome back, {user?.full_name ?? clientUser.name}
-          </h1>
-          <p className="mt-1 text-sm text-foreground-500">
-            {user?.organization ?? clientUser.organization} ·{" "}
-            <span className="text-foreground-700">{user?.organization_full ?? clientUser.organizationFull}</span> ·{" "}
-            {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to="/client/create"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-primary-600 bg-primary-600 px-4 text-sm font-label font-medium text-background-50 hover:bg-primary-700 transition-colors cursor-pointer whitespace-nowrap"
-          >
-            <span className="w-4 h-4 flex items-center justify-center">
-              <i className="ri-add-line text-[15px] leading-none"></i>
-            </span>
-            Create Request
-          </Link>
-        </div>
+      <div className="min-w-0">
+        <h1 className="font-heading text-xl font-bold text-foreground-950">
+          Welcome back, {user?.full_name ?? clientUser.name}
+        </h1>
+        <p className="mt-1 text-sm text-foreground-500">
+          {user?.organization ?? clientUser.organization} ·{" "}
+          <span className="text-foreground-700">{user?.organization_full ?? clientUser.organizationFull}</span> ·{" "}
+          {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
+        </p>
       </div>
 
       <div className="mt-5">

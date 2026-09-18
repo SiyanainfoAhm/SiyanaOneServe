@@ -18,8 +18,12 @@ export function countByStatus<T extends StatusRow>(rows: T[]): Record<string, nu
   return map;
 }
 
+export function isClosedStatus(status: string): boolean {
+  return ["resolved", "rejected", "closed"].includes((status ?? "").trim().toLowerCase());
+}
+
 export function isOpen(status: string): boolean {
-  return status !== "Resolved" && status !== "Rejected" && status !== "Closed";
+  return !isClosedStatus(status);
 }
 
 export function rejectionFromEvents(

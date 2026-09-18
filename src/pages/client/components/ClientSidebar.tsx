@@ -14,7 +14,7 @@ interface NavItem {
 const NAV_PRIMARY: NavItem[] = [
   { label: "Dashboard", to: "/client/dashboard", icon: "ri-dashboard-3-line" },
   { label: "Create Request", to: "/client/create", icon: "ri-add-circle-line" },
-  { label: "My Requests", to: "/client/requests", icon: "ri-file-list-3-line" },
+  { label: "Project Request", to: "/client/requests", icon: "ri-file-list-3-line" },
 ];
 
 const NAV_SECONDARY: NavItem[] = [

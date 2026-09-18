@@ -178,17 +178,6 @@ export default function TicketQueuePage() {
     setSort((prev) => (prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" }));
   }
 
-  async function handleStatusChange(id: string, status: string) {
-    try {
-      const ticket = await updateTicketStatus(id, status);
-      replaceTicket(ticket);
-      showToast(`${id} moved to ${status}`);
-      await refresh();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Unable to update status.");
-    }
-  }
-
   async function handleBulkStatus() {
     if (selected.length === 0) return;
     setBulkBusy(true);
@@ -356,7 +345,6 @@ export default function TicketQueuePage() {
           allSelected={allSelected}
           sort={sort}
           onSort={handleSort}
-          onStatusChange={handleStatusChange}
         />
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-background-200 px-5 py-3.5 sm:flex-row">

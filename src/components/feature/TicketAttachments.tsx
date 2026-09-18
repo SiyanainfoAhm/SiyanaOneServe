@@ -1,6 +1,7 @@
 /**
  * Add-files control on workbench and client request detail.
- * Upload bytes to Azure, then persist the blob path with sosticket_register_attachment.
+ * Dropped or browsed files upload to Azure immediately, then persist via
+ * sosticket_register_attachment.
  */
 import { useState } from "react";
 import AttachmentList, { type AttachmentItem } from "@/components/feature/AttachmentList";
@@ -26,9 +27,12 @@ export default function TicketAttachments({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleUpload() {
-    const ready = pending.filter((item) => item.status === "Ready" && item.file);
+  async function handleFilesChange(next: UploadFile[]) {
+    const ready = next.filter((item) => item.status === "Ready" && item.file);
+    const leftover = next.filter((item) => item.status !== "Ready");
+    setPending(leftover);
     if (ready.length === 0) return;
+
     setBusy(true);
     setError("");
     try {
@@ -38,7 +42,6 @@ export default function TicketAttachments({
         latest = await api.registerAttachment(ticketId, item.name, path, item.byteSize, item.file?.type);
       }
       if (latest) onChange(latest);
-      setPending([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to upload to Azure Storage.");
     } finally {
@@ -49,25 +52,16 @@ export default function TicketAttachments({
   return (
     <div className="flex flex-col gap-3">
       <AttachmentList attachments={attachments} emptyText={emptyText} />
-      <AttachmentDropzone files={pending} onChange={setPending} />
+      <AttachmentDropzone files={pending} onChange={(files) => void handleFilesChange(files)} />
       {error ? (
         <p className="text-xs text-[oklch(var(--status-danger))]">{error}</p>
       ) : (
         <p className="text-[11px] text-foreground-500">
-          Files and images upload to Azure Storage under <span className="font-medium">siyanaoneserve</span>.
+          {busy
+            ? "Uploading to Azure…"
+            : "Files upload to Azure automatically when you add them."}
         </p>
       )}
-      {pending.length > 0 ? (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void handleUpload()}
-          className="inline-flex h-9 items-center justify-center gap-2 self-start rounded-md border border-primary-600 bg-primary-600 px-3 text-xs font-label font-medium text-background-50 hover:bg-primary-700 disabled:opacity-60 cursor-pointer"
-        >
-          <i className="ri-upload-cloud-2-line text-[14px] leading-none"></i>
-          {busy ? "Uploading…" : "Upload to Azure"}
-        </button>
-      ) : null}
     </div>
   );
 }

@@ -1,12 +1,11 @@
 /**
  * Sortable ticket table. Row click opens /console/tickets/:id.
- * Inline and bulk status changes call sosticket_update_ticket.
+ * Status is display-only here; workflow changes happen on the workbench.
  */
 import { Link } from "react-router-dom";
 import Avatar from "@/components/base/Avatar";
-import { PriorityBadge } from "@/components/base/StatusBadge";
+import { PriorityBadge, TicketStatusBadge } from "@/components/base/StatusBadge";
 import EmptyState from "@/components/base/EmptyState";
-import { workbenchStatuses } from "@/mocks/consoleTicket";
 import { formatDisplayDate } from "@/utils/date";
 import type { QueueTicket } from "@/mocks/consoleQueue";
 
@@ -20,18 +19,9 @@ interface QueueTableProps {
   allSelected: boolean;
   sort: { key: SortKey; dir: "asc" | "desc" };
   onSort: (key: SortKey) => void;
-  onStatusChange: (id: string, status: string) => void;
 }
 
 const HEAD = "px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500";
-
-const STATUS_TONE_BORDER: Record<string, string> = {
-  New: "border-[oklch(var(--status-info)/0.4)] text-[oklch(var(--status-info))]",
-  Assigned: "border-primary-200 text-primary-700",
-  "In Progress": "border-primary-200 text-primary-700",
-  Resolved: "border-accent-200 text-accent-700",
-  Rejected: "border-[oklch(var(--status-danger)/0.4)] text-[oklch(var(--status-danger))]",
-};
 
 function SortButton({
   label,
@@ -62,10 +52,6 @@ function SortButton({
   );
 }
 
-function statusOptions(current: string) {
-  return workbenchStatuses.includes(current) ? workbenchStatuses : [current, ...workbenchStatuses];
-}
-
 export default function QueueTable({
   rows,
   selected,
@@ -74,7 +60,6 @@ export default function QueueTable({
   allSelected,
   sort,
   onSort,
-  onStatusChange,
 }: QueueTableProps) {
   if (rows.length === 0) {
     return (
@@ -155,25 +140,7 @@ export default function QueueTable({
                   <PriorityBadge priority={ticket.priority} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="relative inline-flex items-center">
-                    <select
-                      value={ticket.status}
-                      onChange={(event) => onStatusChange(ticket.id, event.target.value)}
-                      aria-label={`Change status of ${ticket.id}`}
-                      className={`h-8 appearance-none rounded-full border bg-background-50 pl-3 pr-7 text-xs font-label font-medium outline-none cursor-pointer transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100 ${
-                        STATUS_TONE_BORDER[ticket.status] ?? "border-background-300 text-foreground-700"
-                      }`}
-                    >
-                      {statusOptions(ticket.status).map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute right-2 w-3.5 h-3.5 flex items-center justify-center text-foreground-400">
-                      <i className="ri-arrow-down-s-line text-[14px] leading-none"></i>
-                    </span>
-                  </div>
+                  <TicketStatusBadge status={ticket.status} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {ticket.assignee === "Unassigned" ? (
