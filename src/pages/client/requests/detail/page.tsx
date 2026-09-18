@@ -243,6 +243,7 @@ export default function ClientRequestDetailPage() {
                   ticketUuid={live?.ticket_id ?? live?.id ?? request.id}
                   attachments={detail.attachments}
                   emptyText="No documents attached to this request."
+                  readOnly={closed}
                   onChange={(ticket) => {
                     setLive(ticket);
                     replaceTicket(ticket);
