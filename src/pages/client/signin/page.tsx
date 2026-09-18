@@ -2,7 +2,6 @@
  * Government Client Portal sign-in.
  *
  * login(..., "client") — staff roles are rejected by sosticket_login.
- * Demo prefill: meera.joshi@mgsu.ac.in / mgsu@2026. Remove before production.
  */
 import { useState } from "react";
 import type { FormEvent } from "react";
@@ -21,8 +20,8 @@ export default function ClientSignin() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("meera.joshi@mgsu.ac.in");
-  const [password, setPassword] = useState("mgsu@2026");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -164,10 +163,6 @@ export default function ClientSignin() {
               Only authorised departmental officers may use this portal.
             </p>
           </div>
-
-          <p className="mt-5 rounded-md border border-dashed border-background-300 bg-background-50 p-3 text-center text-[11px] text-foreground-500">
-            Demo access is pre-filled — just press <span className="font-semibold text-foreground-800">Sign in</span> to explore the client portal.
-          </p>
         </div>
       </div>
 

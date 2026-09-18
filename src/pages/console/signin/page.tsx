@@ -2,7 +2,6 @@
  * Operations Console sign-in.
  *
  * login(..., "console") — government nodal/requester roles are rejected by sosticket_login.
- * Demo prefill: arjun.mehta@siyana.in / siyana@2026.
  */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -20,8 +19,8 @@ export default function ConsoleSignin() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("arjun.mehta@siyana.in");
-  const [password, setPassword] = useState("siyana@2026");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -162,10 +161,6 @@ export default function ConsoleSignin() {
               with government IT security policy. Never share your credentials.
             </p>
           </div>
-
-          <p className="mt-5 rounded-md border border-dashed border-background-300 bg-background-50 p-3 text-center text-[11px] text-foreground-500">
-            Demo access is pre-filled — just press <span className="font-semibold text-foreground-800">Sign in</span> to explore the console.
-          </p>
         </div>
       </div>
 

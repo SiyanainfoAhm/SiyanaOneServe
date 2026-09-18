@@ -101,7 +101,7 @@ export const api = {
     return rpc<TicketRecord>("sosticket_update_ticket", { p_token: tokenOrThrow(), p_payload: payload });
   },
   addMessage(ticketId: string, body: string, visibility: "client" | "internal" = "client") {
-    // "internal" is staff-only; "client" shows on the government request thread.
+    // Client-visible notes appear on both the government request thread and the staff workbench.
     return rpc<TicketRecord>("sosticket_add_message", {
       p_token: tokenOrThrow(),
       p_ticket_id: ticketId,
