@@ -2,7 +2,7 @@
  * Ticket workbench for staff.
  *
  * Assign, status, notes, files, timeline. Assign/status changes notify via DB mail trigger.
- * Notes posted here are internal (not shown on the client request thread).
+ * Notes posted here are visible on the government request thread as well.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -157,9 +157,7 @@ function TicketWorkbench({ id }: { id: string }) {
 
   async function handleSend() {
     if (notesLocked || !draft.trim()) return;
-    // Workbench "Notes" tab is internal; other conversation tabs are client-visible.
-    const visibility = centerTab === "notes" ? "internal" : "client";
-    const ticket = await api.addMessage(id, draft.trim(), visibility);
+    const ticket = await api.addMessage(id, draft.trim(), "client");
     setDetail(ticket);
     replaceTicket(ticket);
     setDraft("");

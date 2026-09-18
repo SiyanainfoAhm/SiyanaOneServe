@@ -1,6 +1,6 @@
 /**
- * Message thread UI. Console workbench posts notes as internal;
- * client request detail posts them as client-visible.
+ * Message thread UI. Console and client both post notes as client-visible
+ * so government users and Siyana staff share the same conversation.
  */
 import Avatar from "@/components/base/Avatar";
 import Button from "@/components/base/Button";
