@@ -21,7 +21,7 @@ import { toClientDetail, toClientRequest } from "@/hooks/useClientRequestStore";
 import { api } from "@/services/api";
 import { formatDisplayDate } from "@/utils/date";
 import type { TicketRecord } from "@/types/oneserve";
-import { rejectionFromEvents } from "@/utils/ticketStats";
+import { isClosedStatus, rejectionFromEvents } from "@/utils/ticketStats";
 
 export default function ClientRequestDetailPage() {
   const params = useParams();
@@ -82,7 +82,7 @@ export default function ClientRequestDetailPage() {
                 className="inline-flex items-center gap-2 rounded-md bg-primary-600 px-4 py-2.5 text-sm font-medium text-background-50 hover:bg-primary-700 transition-colors cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-arrow-left-line text-[15px] leading-none"></i>
-                Back to My Requests
+                Back to Project Request
               </Link>
             }
           />
@@ -101,13 +101,15 @@ export default function ClientRequestDetailPage() {
     side: message.kind === "client" ? "requester" : "team",
   }));
 
+  const closed = isClosedStatus(request.status);
+
   function flash(text: string) {
     setBanner(text);
     window.setTimeout(() => setBanner(""), 3000);
   }
 
   async function handleSend() {
-    if (!draft.trim()) return;
+    if (closed || !draft.trim()) return;
     setSaving(true);
     try {
       // Government notes are always client-visible (they appear on the staff workbench too).
@@ -146,8 +148,6 @@ export default function ClientRequestDetailPage() {
     }
   }
 
-  const closed = request.status === "Resolved" || request.status === "Rejected" || request.status === "Closed";
-
   return (
     <ClientLayout>
       <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-500">
@@ -156,7 +156,7 @@ export default function ClientRequestDetailPage() {
           className="inline-flex items-center gap-1.5 hover:text-foreground-800 transition-colors cursor-pointer"
         >
           <i className="ri-arrow-left-line text-[14px] leading-none"></i>
-          My Requests
+          Project Request
         </Link>
         <i className="ri-arrow-right-s-line text-[14px] leading-none text-foreground-400"></i>
         <span className="font-mono text-foreground-700">{request.id}</span>
@@ -253,7 +253,18 @@ export default function ClientRequestDetailPage() {
           ) : null}
 
           {tab === "notes" ? (
-            <NotesPanel notes={notes} draft={draft} onDraft={setDraft} onSend={handleSend} />
+            <NotesPanel
+              notes={notes}
+              draft={draft}
+              onDraft={setDraft}
+              onSend={() => void handleSend()}
+              readOnly={closed}
+              readOnlyHint={
+                request.status.toLowerCase() === "rejected"
+                  ? "This request is rejected. Notes are read-only."
+                  : "This request is resolved. Notes are read-only."
+              }
+            />
           ) : null}
 
           {tab === "history" ? <TimelinePanel events={detail.events} /> : null}
@@ -263,16 +274,18 @@ export default function ClientRequestDetailPage() {
           <section className="rounded-lg border border-background-200 bg-background-50 p-4">
             <h3 className="font-heading text-sm font-semibold text-foreground-950">Need to do something?</h3>
             <div className="mt-3 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setTab("notes")}
-                className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-background-300 bg-background-50 px-3 text-xs font-label font-medium text-foreground-800 hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
-              >
-                <span className="w-4 h-4 flex items-center justify-center">
-                  <i className="ri-chat-3-line text-[14px] leading-none"></i>
-                </span>
-                Add Comment
-              </button>
+              {!closed ? (
+                <button
+                  type="button"
+                  onClick={() => setTab("notes")}
+                  className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-background-300 bg-background-50 px-3 text-xs font-label font-medium text-foreground-800 hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <span className="w-4 h-4 flex items-center justify-center">
+                    <i className="ri-chat-3-line text-[14px] leading-none"></i>
+                  </span>
+                  Add Comment
+                </button>
+              ) : null}
               {!closed ? (
                 <button
                   type="button"

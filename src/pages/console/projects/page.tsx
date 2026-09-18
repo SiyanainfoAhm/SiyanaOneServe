@@ -192,17 +192,7 @@ export default function ProjectsPage() {
                   <i className="ri-building-2-line text-[12px] leading-none"></i>
                   {project.organization}
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <StatusBadge label={project.status} tone={STATUS_TONE[project.status] ?? "neutral"} />
-                  <button
-                    type="button"
-                    onClick={() => openEdit(project)}
-                    className="w-7 h-7 rounded-md flex items-center justify-center text-foreground-500 hover:bg-background-100 hover:text-foreground-900 transition-colors cursor-pointer"
-                    aria-label={`Edit ${project.name}`}
-                  >
-                    <i className="ri-pencil-line text-[15px] leading-none"></i>
-                  </button>
-                </div>
+                <StatusBadge label={project.status} tone={STATUS_TONE[project.status] ?? "neutral"} />
               </div>
 
               <h3 className="mt-3 font-heading text-[15px] font-semibold text-foreground-950">
@@ -214,19 +204,6 @@ export default function ProjectsPage() {
                 </Link>
               </h3>
               <p className="mt-0.5 font-mono text-[11px] text-foreground-500">{project.code} · started {project.started}</p>
-
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-foreground-500">Delivery progress</span>
-                  <span className="font-label font-semibold text-foreground-900">{project.progress}%</span>
-                </div>
-                <div className="mt-1.5 h-2 rounded-full bg-background-200 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${project.progress >= 80 ? "bg-accent-500" : project.progress >= 50 ? "bg-primary-500" : "bg-[oklch(var(--status-warning))]"}`}
-                    style={{ width: `${project.progress}%` }}
-                  ></div>
-                </div>
-              </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2 rounded-md bg-background-100 p-2.5">
                 <div className="text-center">
@@ -265,7 +242,7 @@ export default function ProjectsPage() {
             <table className="w-full min-w-[900px] border-collapse">
               <thead>
                 <tr className="border-b border-background-200 bg-background-50">
-                  {["Project", "Organization", "Manager", "Status", "Progress", "Open", ""].map((head, index) => (
+                  {["Project", "Organization", "Manager", "Status", "Open", ""].map((head, index) => (
                     <th key={head || `col-${index}`} className="px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500">
                       {head}
                     </th>
@@ -293,14 +270,6 @@ export default function ProjectsPage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <StatusBadge label={project.status} tone={STATUS_TONE[project.status] ?? "neutral"} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-20 rounded-full bg-background-200 overflow-hidden">
-                          <div className="h-full rounded-full bg-primary-500" style={{ width: `${project.progress}%` }}></div>
-                        </div>
-                        <span className="text-xs text-foreground-600">{project.progress}%</span>
-                      </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground-800">{project.openTickets}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">

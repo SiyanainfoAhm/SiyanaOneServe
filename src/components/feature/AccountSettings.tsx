@@ -6,6 +6,7 @@ import { useState } from "react";
 import Card, { CardHeader } from "@/components/base/Card";
 import Button from "@/components/base/Button";
 import Avatar from "@/components/base/Avatar";
+import ModalOverlay from "@/components/base/ModalOverlay";
 import { notificationPrefs } from "@/mocks/consoleSettings";
 
 export interface AccountProfile {
@@ -279,11 +280,11 @@ export default function AccountSettings({
 
           <Card>
             <h3 className="font-heading text-sm font-semibold text-foreground-950">Projects</h3>
-            <ul className="mt-3 flex flex-col gap-2">
+            <ul className="mt-3 flex max-h-[calc(3*3.375rem+0.5rem*2)] flex-col gap-2 overflow-y-auto overscroll-contain pr-1">
               {projects.map((project) => (
                 <li
                   key={project.code}
-                  className="flex items-center gap-3 rounded-md border border-background-200 bg-background-50 px-3 py-2.5"
+                  className="flex shrink-0 items-center gap-3 rounded-md border border-background-200 bg-background-50 px-3 py-2.5"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-background-100 text-foreground-600">
                     <i className="ri-folders-line text-[16px] leading-none"></i>
@@ -321,8 +322,8 @@ export default function AccountSettings({
       </div>
 
       {pwOpen ? (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground-950/40 p-4 sm:items-center">
-          <div className="w-full max-w-md rounded-lg border border-background-200 bg-background-50">
+        <ModalOverlay>
+          <div className="w-full max-w-md rounded-lg border border-background-200 bg-background-50 shadow-lg">
             <div className="flex items-center justify-between border-b border-background-200 px-5 py-4">
               <div>
                 <h3 className="font-heading text-[15px] font-semibold text-foreground-950">Change Password</h3>
@@ -402,7 +403,7 @@ export default function AccountSettings({
               </Button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       ) : null}
 
       {banner ? (
