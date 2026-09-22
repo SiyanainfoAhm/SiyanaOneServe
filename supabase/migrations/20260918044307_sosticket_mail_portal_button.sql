@@ -47,7 +47,7 @@ BEGIN
     || '<a href="https://siyana-oneserve.vercel.app/" target="_blank" style="display:inline-block;background:#1e3a5f;color:#ffffff;font-size:14px;font-weight:700;line-height:1;text-decoration:none;padding:12px 20px;border-radius:6px;">Siyana OneServe</a>'
     || '</td></tr></table>'
     || '</td></tr>'
-    || '<tr><td style="padding:14px 24px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;">Sent by Siyana Info Solutions · jatin.saksena@siyanainfo.com</td></tr>'
+    || '<tr><td style="padding:14px 24px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;">Sent by Siyana Info Solutions · tickets@siyanainfo.com</td></tr>'
     || '</table></td></tr></table></body></html>';
 END;
 $$;

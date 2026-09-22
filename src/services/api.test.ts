@@ -58,13 +58,13 @@ describe("api", () => {
     sendForgotPasswordEmail.mockResolvedValue({
       ok: true,
       portal: "client",
-      email: "jatin.saksena@siyanainfo.com",
+      email: "tickets@siyanainfo.com",
     });
-    await expect(api.forgotPassword("jatin.saksena@siyanainfo.com")).resolves.toEqual({
+    await expect(api.forgotPassword("tickets@siyanainfo.com")).resolves.toEqual({
       ok: true,
       sent: true,
       portal: "client",
-      email: "jatin.saksena@siyanainfo.com",
+      email: "tickets@siyanainfo.com",
     });
     expect(rpcMock).not.toHaveBeenCalled();
   });
@@ -82,6 +82,16 @@ describe("api", () => {
       p_file_path: "siyanaoneserve/images/ticket-uuid/file.png",
       p_file_size: 12,
       p_mime_type: "image/png",
+    });
+  });
+
+  it("resends an invitation with the user id and generated password", async () => {
+    rpcMock.mockResolvedValue({ id: "user-1", password: "SiyMih@16" });
+    await api.resendInvite("user-1", "SiyMih@16");
+    expect(rpcMock).toHaveBeenCalledWith("sosticket_resend_invite", {
+      p_token: "session-token",
+      p_user_id: "user-1",
+      p_password: "SiyMih@16",
     });
   });
 

@@ -15,11 +15,13 @@ import EmptyState from "@/components/base/EmptyState";
 import { StatusBadge, type Tone } from "@/components/base/StatusBadge";
 import type { ConsoleUser } from "@/mocks/consoleUsers";
 import UserFormModal from "@/pages/console/users/components/UserFormModal";
+import ResendInviteModal from "@/pages/console/users/components/ResendInviteModal";
 import { useProjects } from "@/hooks/useProjectStore";
 import { useProjectScope, ALL_PROJECTS } from "@/hooks/useProjectScope";
 import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/services/api";
 import { projectNamesOf } from "@/utils/liveStats";
+import { generateInvitePassword } from "@/utils/credentials";
 import type { SessionUser } from "@/types/oneserve";
 
 const STATUS_TONE: Record<string, Tone> = {
@@ -73,6 +75,8 @@ export default function UsersPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<ConsoleUser | null>(null);
+  const [resendingUser, setResendingUser] = useState<ConsoleUser | null>(null);
+  const [resendPassword, setResendPassword] = useState("");
 
   useEffect(() => {
     if (queryParam) setSearch(queryParam);
@@ -133,6 +137,18 @@ export default function UsersPage() {
     setTab("All");
     setRole("All Roles");
     showToast(`Invitation sent to ${newUser.email}`);
+  }
+
+  function openResend(user: ConsoleUser) {
+    setResendPassword(generateInvitePassword(user.name, user.organization));
+    setResendingUser(user);
+  }
+
+  async function handleResendInvite() {
+    if (!resendingUser) return;
+    await api.resendInvite(resendingUser.id, resendPassword);
+    await refresh();
+    showToast(`Invitation resent to ${resendingUser.email}`);
   }
 
   async function handleSaveEdit(updated: ConsoleUser) {
@@ -236,14 +252,25 @@ export default function UsersPage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-500">{user.lastActive}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <button
-                        type="button"
-                        onClick={() => setEditingUser(user)}
-                        className="inline-flex w-8 h-8 items-center justify-center rounded-md border border-background-200 text-foreground-500 hover:bg-background-100 hover:text-foreground-900 transition-colors cursor-pointer"
-                        aria-label={`Manage ${user.name}`}
-                      >
-                        <i className="ri-more-2-fill text-[15px] leading-none"></i>
-                      </button>
+                      <div className="inline-flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openResend(user)}
+                          className="inline-flex w-8 h-8 items-center justify-center rounded-md border border-background-200 text-foreground-500 hover:bg-background-100 hover:text-foreground-900 transition-colors cursor-pointer"
+                          aria-label={`Resend invitation to ${user.name}`}
+                          title="Resend invitation"
+                        >
+                          <i className="ri-mail-send-line text-[15px] leading-none"></i>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingUser(user)}
+                          className="inline-flex w-8 h-8 items-center justify-center rounded-md border border-background-200 text-foreground-500 hover:bg-background-100 hover:text-foreground-900 transition-colors cursor-pointer"
+                          aria-label={`Manage ${user.name}`}
+                        >
+                          <i className="ri-more-2-fill text-[15px] leading-none"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -267,6 +294,18 @@ export default function UsersPage() {
           user={editingUser}
           onClose={() => setEditingUser(null)}
           onSubmit={handleSaveEdit}
+        />
+      ) : null}
+
+      {resendingUser ? (
+        <ResendInviteModal
+          user={resendingUser}
+          password={resendPassword}
+          onClose={() => {
+            setResendingUser(null);
+            setResendPassword("");
+          }}
+          onConfirm={handleResendInvite}
         />
       ) : null}
 

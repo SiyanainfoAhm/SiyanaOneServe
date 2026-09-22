@@ -9,21 +9,21 @@ describe("Power Automate mail client", () => {
   it("posts action=test and action=forgot as JSON", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      json: async () => ({ ok: true, portal: "console", email: "jatin.saksena@siyanainfo.com" }),
+      json: async () => ({ ok: true, portal: "console",         email: "tickets@siyanainfo.com" }),
     } as Response);
 
-    await sendTestEmail("jatin.saksena@siyanainfo.com");
-    await sendForgotPasswordEmail("jatin.saksena@siyanainfo.com");
+    await sendTestEmail("tickets@siyanainfo.com");
+    await sendForgotPasswordEmail("tickets@siyanainfo.com");
 
     expect(fetch).toHaveBeenCalledTimes(2);
     const [url, init] = vi.mocked(fetch).mock.calls[0];
     expect(String(url)).toContain("/functions/v1/sosticket-test-email");
     expect(JSON.parse(String((init as RequestInit).body))).toEqual({
-      email: "jatin.saksena@siyanainfo.com",
+      email: "tickets@siyanainfo.com",
       action: "test",
     });
     expect(JSON.parse(String((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body))).toEqual({
-      email: "jatin.saksena@siyanainfo.com",
+      email: "tickets@siyanainfo.com",
       action: "forgot",
     });
   });

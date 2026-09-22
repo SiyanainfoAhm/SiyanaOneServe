@@ -24,7 +24,7 @@ describe("ForgotPasswordModal", () => {
   it("shows the success copy after Power Automate accepts the reset", async () => {
     const user = userEvent.setup();
     forgotPassword.mockResolvedValue({ ok: true, portal: "client" });
-    render(<ForgotPasswordModal email="jatin.saksena@siyanainfo.com" onClose={vi.fn()} />);
+    render(<ForgotPasswordModal email="tickets@siyanainfo.com" onClose={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Send new password" }));
     expect(await screen.findByText(/A new password was sent to/)).toBeInTheDocument();
     expect(screen.getByText(/Government Client Portal/)).toBeInTheDocument();

@@ -1,4 +1,4 @@
--- Mail From / Reply-To: jatin.saksena@siyanainfo.com (replaces hr@siyanainfo.com).
+-- Mail From / Reply-To: tickets@siyanainfo.com (replaces hr@siyanainfo.com).
 
 CREATE OR REPLACE FUNCTION public.sosticket_mail_html(
   p_eyebrow text,
@@ -43,7 +43,7 @@ BEGIN
         '<p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#64748b;">' || public.sosticket_html_escape(p_note) || '</p>'
       ELSE '' END
     || '</td></tr>'
-    || '<tr><td style="padding:14px 24px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;">Sent by Siyana Info Solutions · jatin.saksena@siyanainfo.com</td></tr>'
+    || '<tr><td style="padding:14px 24px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;">Sent by Siyana Info Solutions · tickets@siyanainfo.com</td></tr>'
     || '</table></td></tr></table></body></html>';
 END;
 $$;
@@ -76,8 +76,8 @@ BEGIN
     body := jsonb_build_object(
       'toemail', trim(p_to),
       'ccemail', coalesce(trim(p_cc), ''),
-      'fromemail', 'jatin.saksena@siyanainfo.com',
-      'replyto', 'jatin.saksena@siyanainfo.com',
+      'fromemail', 'tickets@siyanainfo.com',
+      'replyto', 'tickets@siyanainfo.com',
       'subject', coalesce(p_subject, 'Siyana OneServe'),
       'bodyhtml', p_html,
       'attachment', '',
