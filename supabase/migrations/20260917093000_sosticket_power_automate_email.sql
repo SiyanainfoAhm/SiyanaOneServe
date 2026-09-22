@@ -1,5 +1,5 @@
 -- Power Automate email for forgot password, assignment, and status changes.
--- From address later moved to jatin.saksena@siyanainfo.com; payload later nested (see later migrations).
+-- From address later moved to tickets@siyanainfo.com; payload later nested (see later migrations).
 
 CREATE OR REPLACE FUNCTION public.sosticket_mail_webhook_url()
 RETURNS text

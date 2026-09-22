@@ -8,7 +8,7 @@
  * action=test  → probe message
  * action=forgot → service-role RPC sosticket_prepare_password_reset, then send the new password
  *
- * Reply-To: jatin.saksena@siyanainfo.com (Outlook From still follows the flow connection).
+ * Reply-To: tickets@siyanainfo.com (Outlook From still follows the flow connection).
  */
 const WEBHOOK =
   "https://default25ff3e19eb6b4343af6d1f96004e62.ab.environment.api.powerplatform.com/powerautomate/automations/direct/cu/18/workflows/4f70bd1565c140a78621b2ad2a3d618f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=_FpfAY_F-d0VpUpINYLRtjFMY_t4mu58TCRruIP62u4";
@@ -33,7 +33,8 @@ async function sendFlowEmail(to: string, subject: string, bodyhtml: string) {
     email: {
       toEmail: to,
       ccEmail: "",
-      replyTo: "jatin.saksena@siyanainfo.com",
+      fromEmail: "tickets@siyanainfo.com",
+      replyTo: "tickets@siyanainfo.com",
       subject,
       bodyHtml: bodyhtml,
       leadTypeHtml: "",
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
     const sent = await sendFlowEmail(
       email,
       "Siyana OneServe test email",
-      "<p>This is a Siyana OneServe test email from jatin.saksena@siyanainfo.com.</p><p>If you received this, Power Automate is working.</p>",
+      "<p>This is a Siyana OneServe test email from tickets@siyanainfo.com.</p><p>If you received this, Power Automate is working.</p>",
     );
     return json(sent);
   } catch (error) {

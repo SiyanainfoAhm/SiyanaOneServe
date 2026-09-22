@@ -31,7 +31,7 @@ BEGIN
       'email', jsonb_build_object(
         'toEmail', trim(p_to),
         'ccEmail', coalesce(trim(p_cc), ''),
-        'replyTo', 'jatin.saksena@siyanainfo.com',
+        'replyTo', 'tickets@siyanainfo.com',
         'subject', coalesce(p_subject, 'Siyana OneServe'),
         'bodyHtml', p_html,
         'leadTypeHtml', '',

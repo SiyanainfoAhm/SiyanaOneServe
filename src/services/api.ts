@@ -85,6 +85,13 @@ export const api = {
     // Role decides portal: government_* → client, everyone else → console.
     return rpc<SessionUser>("sosticket_invite_user", { p_token: tokenOrThrow(), p_payload: payload });
   },
+  resendInvite(userId: string, password?: string) {
+    return rpc<SessionUser>("sosticket_resend_invite", {
+      p_token: tokenOrThrow(),
+      p_user_id: userId,
+      p_password: password ?? null,
+    });
+  },
   updateUser(payload: Record<string, unknown>) {
     return rpc<SessionUser>("sosticket_update_user", { p_token: tokenOrThrow(), p_payload: payload });
   },

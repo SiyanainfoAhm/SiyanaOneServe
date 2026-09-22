@@ -50,8 +50,8 @@ export default function ForgotPasswordModal({ email, onClose }: ForgotPasswordMo
             </h3>
             <p className="mt-0.5 text-xs text-foreground-500">
               {sent
-                ? "A new password was emailed from jatin.saksena@siyanainfo.com"
-                : "We will email a new password from jatin.saksena@siyanainfo.com"}
+                ? "A new password was emailed from tickets@siyanainfo.com"
+                : "We will email a new password from tickets@siyanainfo.com"}
             </p>
           </div>
           <button
