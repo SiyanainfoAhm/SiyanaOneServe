@@ -13,6 +13,7 @@ interface TicketAttachmentsProps {
   ticketId: string;
   ticketUuid: string;
   emptyText?: string;
+  readOnly?: boolean;
   onChange: (ticket: Awaited<ReturnType<typeof api.registerAttachment>>) => void;
 }
 
@@ -21,6 +22,7 @@ export default function TicketAttachments({
   ticketId,
   ticketUuid,
   emptyText,
+  readOnly = false,
   onChange,
 }: TicketAttachmentsProps) {
   const [pending, setPending] = useState<UploadFile[]>([]);
@@ -28,6 +30,7 @@ export default function TicketAttachments({
   const [error, setError] = useState("");
 
   async function handleFilesChange(next: UploadFile[]) {
+    if (readOnly) return;
     const ready = next.filter((item) => item.status === "Ready" && item.file);
     const leftover = next.filter((item) => item.status !== "Ready");
     setPending(leftover);
@@ -52,15 +55,23 @@ export default function TicketAttachments({
   return (
     <div className="flex flex-col gap-3">
       <AttachmentList attachments={attachments} emptyText={emptyText} />
-      <AttachmentDropzone files={pending} onChange={(files) => void handleFilesChange(files)} />
-      {error ? (
-        <p className="text-xs text-[oklch(var(--status-danger))]">{error}</p>
-      ) : (
+      {readOnly ? (
         <p className="text-[11px] text-foreground-500">
-          {busy
-            ? "Uploading to Azure…"
-            : "Files upload to Azure automatically when you add them."}
+          Attachments are locked after this ticket is resolved or rejected.
         </p>
+      ) : (
+        <>
+          <AttachmentDropzone files={pending} onChange={(files) => void handleFilesChange(files)} />
+          {error ? (
+            <p className="text-xs text-[oklch(var(--status-danger))]">{error}</p>
+          ) : (
+            <p className="text-[11px] text-foreground-500">
+              {busy
+                ? "Uploading to Azure…"
+                : "Files upload to Azure automatically when you add them."}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
