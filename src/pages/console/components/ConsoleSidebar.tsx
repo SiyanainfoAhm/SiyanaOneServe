@@ -1,5 +1,6 @@
 /**
  * Staff nav: dashboard, create, queue, projects, reports, users, settings.
+ * Queue badge uses live AppData tickets so it updates with background refresh.
  */
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
