@@ -34,7 +34,8 @@ export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: P
   const liveOrgs = useMemo(() => {
     const names = organizations.map((org) => org.name).filter(Boolean);
     if (initial?.organization && !names.includes(initial.organization)) names.push(initial.organization);
-    return names.length > 0 ? names : ["Siyana"];
+    const sorted = names.sort((a, b) => a.localeCompare(b));
+    return sorted.length > 0 ? sorted : ["Siyana"];
   }, [organizations, initial]);
   const managerOptions = useMemo(() => {
     const staff = users

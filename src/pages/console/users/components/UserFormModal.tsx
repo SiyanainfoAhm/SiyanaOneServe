@@ -53,17 +53,16 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
   const projects = useProjects();
   const { organizations } = useAppData();
 
-  const govOrgOptions = useMemo(() => {
+  // Same org list as Projects / Project form: every organization, including Siyana.
+  const orgOptions = useMemo(() => {
     const names = new Set<string>();
     organizations.forEach((org) => {
-      if (org.name && org.name.toLowerCase() !== STAFF_ORG.toLowerCase()) names.add(org.name);
+      if (org.name) names.add(org.name);
     });
     projects.forEach((project) => {
-      if (project.organization && project.organization.toLowerCase() !== STAFF_ORG.toLowerCase()) {
-        names.add(project.organization);
-      }
+      if (project.organization) names.add(project.organization);
     });
-    if (user && isGovernmentRole(user.role) && user.organization) names.add(user.organization);
+    if (user?.organization) names.add(user.organization);
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [organizations, projects, user]);
 
@@ -294,7 +293,7 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
                 {isGovernment ? (
                   <Select
                     label="Organization"
-                    options={govOrgOptions}
+                    options={orgOptions}
                     value={organization}
                     onChange={(event) => handleOrgChange(event.target.value)}
                     icon="ri-building-2-line"

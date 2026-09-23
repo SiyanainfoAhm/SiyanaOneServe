@@ -79,7 +79,7 @@ export default function RequestForm({ mode }: { mode: RequestFormMode }) {
   const isConsole = mode === "console";
   const { user } = useAuth();
   const scopedProject = useProjectScope();
-  const { projects, refresh } = useAppData();
+  const { projects, organizations, refresh } = useAppData();
 
   const assignedNames = useMemo(
     () => projectNamesOf(user?.projects as Array<string | { name: string }>),
@@ -92,10 +92,13 @@ export default function RequestForm({ mode }: { mode: RequestFormMode }) {
   }, [projects, isConsole, assignedNames]);
 
   const organizationOptions = useMemo(() => {
-    const names = Array.from(new Set(projectList.map((item) => item.organization).filter(Boolean)));
+    const names = Array.from(new Set(organizations.map((org) => org.name).filter(Boolean)));
+    projectList.forEach((item) => {
+      if (item.organization && !names.includes(item.organization)) names.push(item.organization);
+    });
     if (user?.organization && !names.includes(user.organization)) names.unshift(user.organization);
-    return names;
-  }, [projectList, user?.organization]);
+    return names.sort((a, b) => a.localeCompare(b));
+  }, [organizations, projectList, user?.organization]);
 
   const scopedOrganization = projectList.find((item) => item.name === scopedProject)?.organization;
   const defaultOrganization = scopedOrganization ?? user?.organization ?? organizationOptions[0] ?? "";
