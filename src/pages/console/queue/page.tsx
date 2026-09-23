@@ -23,7 +23,9 @@ import Select from "@/components/base/Select";
 const TODAY = todayIso();
 const PAGE_SIZE = 10;
 
-const STATUS_TABS = ["All", "New", "Assigned", "In Progress", "Resolved", "Rejected"];
+const STATUS_TABS = ["All", "New", "Assigned", "In Progress", "Resolved"];
+/** Resolve requires a comment on the ticket workbench. */
+const BULK_STATUSES = workbenchStatuses.filter((status) => status !== "Resolved");
 
 const PRIORITY_ORDER: Record<string, number> = { Critical: 0, High: 1, Normal: 2, Low: 3 };
 
@@ -312,7 +314,7 @@ export default function TicketQueuePage() {
                 Assign
               </Button>
               <Select
-                options={workbenchStatuses}
+                options={BULK_STATUSES}
                 value={bulkStatus}
                 onChange={(event) => setBulkStatus(event.target.value)}
                 containerClassName="w-[150px]"

@@ -2,7 +2,10 @@
  * Staff nav: dashboard, create, queue, projects, reports, users, settings.
  */
 import { NavLink, Link, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
+import { isOpen } from "@/utils/ticketStats";
 
 interface NavItem {
   label: string;
@@ -64,8 +67,13 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void })
 }
 
 export default function ConsoleSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { logout, queueOpen } = useAuth();
+  const { logout } = useAuth();
+  const { tickets } = useAppData();
   const navigate = useNavigate();
+  const queueOpen = useMemo(
+    () => tickets.filter((ticket) => isOpen(ticket.status)).length,
+    [tickets],
+  );
   const navPrimary = NAV_PRIMARY.map((item) =>
     item.to === "/console/queue" ? { ...item, count: queueOpen } : item,
   );

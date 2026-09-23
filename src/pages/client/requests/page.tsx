@@ -23,7 +23,7 @@ const DATE_OPTIONS = ["All Time", "Today", "Last 7 Days", "Last 30 Days", "Custo
 
 const HEAD = "px-4 py-2.5 text-left text-[11px] font-label font-semibold uppercase tracking-wider text-foreground-500";
 
-const STATUS_TABS = ["All", "New", "Assigned", "In Progress", "Resolved", "Rejected"];
+const STATUS_TABS = ["All", "New", "Assigned", "In Progress", "Resolved"];
 
 export default function ClientMyRequestsPage() {
   const [searchParams] = useSearchParams();

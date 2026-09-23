@@ -1,11 +1,10 @@
 /**
  * Workbench assignment and forward-only workflow.
  *
- * New → Assigned → In Progress → Resolved. Reject is terminal and needs a reason.
+ * New → Assigned → In Progress → Resolved.
  * Priority is set by the department and cannot be changed here.
  * Team and assignee lists come from live staff, not mock data.
  */
-import { useState } from "react";
 import Select from "@/components/base/Select";
 import Button from "@/components/base/Button";
 
@@ -19,7 +18,6 @@ interface ActionPanelProps {
   onAssign: () => void;
   onStartWork: () => void;
   onResolve: () => void;
-  onReject: (reason: string) => void;
   teams: string[];
   assignees: string[];
 }
@@ -45,30 +43,12 @@ export default function ActionPanel({
   onAssign,
   onStartWork,
   onResolve,
-  onReject,
   teams,
   assignees,
 }: ActionPanelProps) {
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [error, setError] = useState("");
-
-  const isResolved = status === "Resolved" || status === "Closed";
-  const isRejected = status === "Rejected";
-  const closed = isResolved || isRejected;
+  const closed = status === "Resolved" || status === "Closed";
   const canStart = status === "Assigned";
   const canResolve = status === "In Progress";
-
-  function confirmReject() {
-    if (!reason.trim()) {
-      setError("A rejection reason is mandatory.");
-      return;
-    }
-    onReject(reason.trim());
-    setRejectOpen(false);
-    setReason("");
-    setError("");
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -114,72 +94,9 @@ export default function ActionPanel({
           </Button>
         </div>
         <p className="mt-2.5 text-[11px] leading-relaxed text-foreground-500">
-          Forward flow only: New → Assigned → In Progress → Resolved. Rejecting a ticket is final.
+          Forward flow only: New → Assigned → In Progress → Resolved. Resolving requires a comment saved as a note.
         </p>
       </section>
-
-      {!closed ? (
-        <section className="rounded-lg border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.05)] p-4">
-          <SectionTitle icon="ri-close-circle-line" label="Reject Ticket" />
-          {rejectOpen ? (
-            <>
-              <label htmlFor="console-reject" className="mt-3 block text-xs font-label font-semibold text-foreground-800">
-                Reason for rejection <span className="text-[oklch(var(--status-danger))]">*</span>
-              </label>
-              <textarea
-                id="console-reject"
-                value={reason}
-                onChange={(e) => {
-                  setReason(e.target.value);
-                  setError("");
-                }}
-                rows={3}
-                maxLength={300}
-                placeholder="e.g. Request outside scope, insufficient information, not feasible…"
-                className="mt-1.5 w-full resize-none rounded-md border border-background-300 bg-background-50 px-3 py-2 text-sm text-foreground-900 placeholder:text-foreground-400 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-              />
-              {error ? (
-                <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-[oklch(var(--status-danger))]">
-                  <i className="ri-error-warning-line text-[13px] leading-none mt-0.5"></i>
-                  {error}
-                </p>
-              ) : null}
-              <div className="mt-3 flex items-center justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setRejectOpen(false);
-                    setReason("");
-                    setError("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button variant="danger" size="sm" icon="ri-close-line" onClick={confirmReject}>
-                  Confirm Reject
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="mt-2 text-[11px] leading-relaxed text-foreground-600">
-                Rejecting requires a reason. The requester is notified and the ticket is marked Rejected.
-              </p>
-              <Button
-                variant="danger"
-                size="sm"
-                fullWidth
-                className="mt-3"
-                icon="ri-close-circle-line"
-                onClick={() => setRejectOpen(true)}
-              >
-                Reject Ticket
-              </Button>
-            </>
-          )}
-        </section>
-      ) : null}
     </div>
   );
 }

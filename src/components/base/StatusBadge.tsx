@@ -1,7 +1,7 @@
 /**
  * Ticket and priority chips.
  *
- * Dashboard and queue follow New → Assigned → In Progress → Resolved, with Rejected terminal.
+ * Dashboard and queue follow New → Assigned → In Progress → Resolved.
  */
 export type Tone = "primary" | "accent" | "secondary" | "info" | "success" | "warning" | "danger" | "neutral";
 
@@ -24,10 +24,9 @@ const STATUS_TONES: Record<string, Tone> = {
   "In Progress": "primary",
   Resolved: "success",
   Closed: "success",
-  Rejected: "danger",
 };
 
-export const STATUS_ORDER = ["New", "Assigned", "In Progress", "Resolved", "Rejected"];
+export const STATUS_ORDER = ["New", "Assigned", "In Progress", "Resolved"];
 
 export const STATUS_ICONS: Record<string, string> = {
   Draft: "ri-draft-line",
@@ -37,7 +36,6 @@ export const STATUS_ICONS: Record<string, string> = {
   "In Progress": "ri-loader-4-line",
   Resolved: "ri-checkbox-circle-line",
   Closed: "ri-lock-line",
-  Rejected: "ri-close-circle-line",
 };
 
 export function statusTone(status: string): Tone {

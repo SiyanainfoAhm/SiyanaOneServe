@@ -86,10 +86,6 @@ export interface TicketRecord {
   updated_at: string;
   updated: string;
   resolved_at?: string | null;
-  rejection_reason?: string | null;
-  rejected_by?: string | null;
-  rejected_by_id?: string | null;
-  rejected_at?: string | null;
   submitted_by?: string | null;
   waiting_on_me?: boolean;
   category?: string;

@@ -67,29 +67,26 @@ export default function ReportsPage() {
   const summary = useMemo(() => {
     const total = tickets.length;
     const resolved = tickets.filter((ticket) => ticket.status === "Resolved" || ticket.status === "Closed").length;
-    const rejected = tickets.filter((ticket) => ticket.status === "Rejected").length;
-    return { total, resolved, rejected, pending: total - resolved - rejected };
+    return { total, resolved, pending: total - resolved };
   }, [tickets]);
 
   const projectRows = useMemo(() => {
-    const map = new Map<string, { project: string; organization: string; total: number; resolved: number; rejected: number }>();
+    const map = new Map<string, { project: string; organization: string; total: number; resolved: number }>();
     tickets.forEach((ticket) => {
       const entry = map.get(ticket.project) ?? {
         project: ticket.project,
         organization: ticket.organization,
         total: 0,
         resolved: 0,
-        rejected: 0,
       };
       entry.total += 1;
       if (ticket.status === "Resolved" || ticket.status === "Closed") entry.resolved += 1;
-      if (ticket.status === "Rejected") entry.rejected += 1;
       map.set(ticket.project, entry);
     });
     return Array.from(map.values())
       .map((entry) => ({
         ...entry,
-        pending: entry.total - entry.resolved - entry.rejected,
+        pending: entry.total - entry.resolved,
         completion: entry.total ? Math.round((entry.resolved / entry.total) * 100) : 0,
       }))
       .sort((a, b) => b.total - a.total);
@@ -109,12 +106,12 @@ export default function ReportsPage() {
   }, [tickets]);
 
   const statusBreakdown = useMemo(() => {
-    const order = ["New", "Assigned", "In Progress", "Resolved", "Rejected"];
+    const order = ["New", "Assigned", "In Progress", "Resolved"];
     const map = new Map<string, number>();
     order.forEach((status) => map.set(status, 0));
     tickets.forEach((ticket) => {
       const key = ticket.status === "Closed" ? "Resolved" : ticket.status;
-      map.set(key, (map.get(key) ?? 0) + 1);
+      if (order.includes(key)) map.set(key, (map.get(key) ?? 0) + 1);
     });
     const total = tickets.length || 1;
     return order.map((status) => ({
@@ -174,11 +171,10 @@ export default function ReportsPage() {
         </div>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Total Requests" value={String(summary.total)} delta="Across all projects" tone="primary" icon="ri-ticket-2-line" />
         <StatCard label="Resolved" value={String(summary.resolved)} delta="Completed requests" tone="accent" icon="ri-checkbox-circle-line" />
         <StatCard label="Open Requests" value={String(summary.pending)} delta="Still being worked on" tone="info" icon="ri-loader-4-line" />
-        <StatCard label="Rejected" value={String(summary.rejected)} delta="Closed without completion" tone="danger" icon="ri-close-circle-line" />
       </div>
 
       <div className="mt-4 grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -302,7 +298,6 @@ export default function ReportsPage() {
                 Assigned: "bg-primary-500",
                 "In Progress": "bg-primary-400",
                 Resolved: "bg-accent-500",
-                Rejected: "bg-[oklch(var(--status-danger))]",
               };
               return (
                 <div key={row.status} className="flex items-center gap-3">
