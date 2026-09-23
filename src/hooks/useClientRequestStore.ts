@@ -78,8 +78,7 @@ export async function addClientRequest() {
   /* created through api.createTicket */
 }
 
-export async function updateRequestStatus(id: string, status: string, note?: string) {
-  if (status === "Rejected") return api.rejectTicket(id, note);
+export async function updateRequestStatus(id: string, status: string) {
   return api.updateTicket({ id, status });
 }
 

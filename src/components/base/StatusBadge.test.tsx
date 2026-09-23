@@ -7,7 +7,6 @@ describe("StatusBadge", () => {
     expect(statusTone("New")).toBe("info");
     expect(statusTone("Assigned")).toBe("primary");
     expect(statusTone("Resolved")).toBe("success");
-    expect(statusTone("Rejected")).toBe("danger");
     expect(statusTone("Unknown")).toBe("neutral");
   });
 

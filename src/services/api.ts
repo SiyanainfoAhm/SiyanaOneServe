@@ -116,13 +116,6 @@ export const api = {
       p_visibility: visibility,
     });
   },
-  rejectTicket(ticketId: string, note?: string) {
-    return rpc<TicketRecord>("sosticket_reject_ticket", {
-      p_token: tokenOrThrow(),
-      p_ticket_id: ticketId,
-      p_note: note ?? null,
-    });
-  },
   registerAttachment(ticketId: string, fileName: string, filePath: string, fileSize?: number, mimeType?: string) {
     // filePath is the Azure blob path returned by uploadToAzure, not a Supabase Storage key.
     return rpc<TicketRecord>("sosticket_register_attachment", {

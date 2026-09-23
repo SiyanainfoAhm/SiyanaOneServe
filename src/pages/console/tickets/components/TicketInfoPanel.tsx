@@ -1,16 +1,9 @@
 /**
  * Read-only ticket metadata on the workbench (org, project, requester, assignment).
- * Rejected tickets show the mandatory reason from the timeline or stored rejection fields.
  */
 import type { ReactNode } from "react";
 import Avatar from "@/components/base/Avatar";
 import { TicketStatusBadge, PriorityBadge } from "@/components/base/StatusBadge";
-
-interface Rejection {
-  by: string;
-  at: string;
-  reason: string;
-}
 
 interface TicketInfoPanelProps {
   project: string;
@@ -23,10 +16,9 @@ interface TicketInfoPanelProps {
   assigneeInitials: string;
   assigneeRole: string;
   requester: { name: string; role: string; email?: string; organization?: string };
-  rejection?: Rejection;
 }
 
-const UNASSIGNED_STATUSES = ["New", "Rejected"];
+const UNASSIGNED_STATUSES = ["New"];
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -50,7 +42,6 @@ export default function TicketInfoPanel({
   assigneeInitials,
   assigneeRole,
   requester,
-  rejection,
 }: TicketInfoPanelProps) {
   const isAssigned =
     assignee !== "Unassigned" && !UNASSIGNED_STATUSES.includes(status) && Boolean(assignee.trim());
@@ -83,19 +74,6 @@ export default function TicketInfoPanel({
           </div>
         </div>
       </section>
-
-      {rejection ? (
-        <section className="rounded-lg border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.06)] p-4">
-          <h3 className="flex items-center gap-2 font-heading text-sm font-semibold text-[oklch(var(--status-danger))]">
-            <i className="ri-close-circle-line text-[15px] leading-none"></i>
-            Rejected
-          </h3>
-          <p className="mt-2 text-sm text-foreground-700">{rejection.reason}</p>
-          <p className="mt-2 text-[11px] text-foreground-500">
-            by {rejection.by} · {rejection.at}
-          </p>
-        </section>
-      ) : null}
 
       <section className="rounded-lg border border-background-200 bg-background-50 p-4">
         <h3 className="font-heading text-sm font-semibold text-foreground-950">Assigned To</h3>

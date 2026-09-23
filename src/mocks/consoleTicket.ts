@@ -270,7 +270,7 @@ export const ticketDetails: Record<string, TicketDetail> = {
   },
 };
 
-export const workbenchStatuses = ["New", "Assigned", "In Progress", "Resolved", "Rejected"];
+export const workbenchStatuses = ["New", "Assigned", "In Progress", "Resolved"];
 
 export const workbenchTeams = ["Content Team", "Development Team", "QA Team"];
 

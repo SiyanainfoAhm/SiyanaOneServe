@@ -108,7 +108,7 @@ export default function ProjectDetailPage() {
   }
 
   const openTickets = projectTickets.filter(
-    (ticket) => ticket.status !== "Resolved" && ticket.status !== "Rejected" && ticket.status !== "Closed",
+    (ticket) => ticket.status !== "Resolved" && ticket.status !== "Closed",
   ).length;
   const resolvedTickets = projectTickets.filter(
     (ticket) => ticket.status === "Resolved" || ticket.status === "Closed",

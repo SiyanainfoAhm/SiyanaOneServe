@@ -19,26 +19,9 @@ export function countByStatus<T extends StatusRow>(rows: T[]): Record<string, nu
 }
 
 export function isClosedStatus(status: string): boolean {
-  return ["resolved", "rejected", "closed"].includes((status ?? "").trim().toLowerCase());
+  return ["resolved", "closed"].includes((status ?? "").trim().toLowerCase());
 }
 
 export function isOpen(status: string): boolean {
   return !isClosedStatus(status);
-}
-
-export function rejectionFromEvents(
-  status: string,
-  events?: Array<{ type?: string; title?: string; note?: string | null; actor?: string; date?: string; time?: string }>,
-  fallbackAt = "",
-  stored?: { reason?: string | null; by?: string | null; at?: string | null },
-) {
-  if (status !== "Rejected") return undefined;
-  const event = [...(events ?? [])]
-    .reverse()
-    .find((item) => item.type === "rejected" || /reject/i.test(item.title ?? ""));
-  return {
-    by: stored?.by || event?.actor || "Siyana Team",
-    at: stored?.at || (event ? [event.date, event.time].filter(Boolean).join(" ") : fallbackAt),
-    reason: stored?.reason || event?.note || "No reason provided.",
-  };
 }

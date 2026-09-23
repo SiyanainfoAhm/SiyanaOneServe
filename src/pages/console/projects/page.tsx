@@ -74,10 +74,7 @@ export default function ProjectsPage() {
   const stats = useMemo(() => {
     const active = scoped.filter((project) => project.status === "Active").length;
     const open = scoped.reduce((sum, project) => sum + project.openTickets, 0);
-    const avg = Math.round(
-      scoped.reduce((sum, project) => sum + project.progress, 0) / Math.max(1, scoped.length),
-    );
-    return { active, open, avg };
+    return { active, open };
   }, [scoped]);
 
   function openCreate() {
@@ -143,11 +140,10 @@ export default function ProjectsPage() {
         }
       />
 
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         <StatCard label="Total Projects" value={String(projects.length)} delta={`Across ${organizations.length} organizations`} tone="primary" icon="ri-folders-line" />
         <StatCard label="Active Projects" value={String(stats.active)} delta="Currently in delivery" tone="accent" icon="ri-play-circle-line" />
         <StatCard label="Open Tickets" value={String(stats.open)} delta="Across all projects" tone="warning" icon="ri-ticket-2-line" />
-        <StatCard label="Avg Progress" value={`${stats.avg}%`} delta="Portfolio completion" tone="info" icon="ri-line-chart-line" />
       </div>
 
       <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

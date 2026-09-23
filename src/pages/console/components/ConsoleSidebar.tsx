@@ -1,13 +1,18 @@
 /**
  * Staff nav: dashboard, create, queue, projects, reports, users, settings.
+ * Queue badge uses live AppData tickets so it updates with background refresh.
  */
 import { NavLink, Link, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
+import { isOpen } from "@/utils/ticketStats";
 
 interface NavItem {
   label: string;
   to: string;
   icon: string;
+  count?: number;
 }
 
 const NAV_PRIMARY: NavItem[] = [
@@ -47,6 +52,15 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void })
             <i className={`${item.icon} text-[17px] leading-none`}></i>
           </span>
           <span className="truncate">{item.label}</span>
+          {typeof item.count === "number" ? (
+            <span
+              className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold font-label ${
+                isActive ? "bg-primary-600 text-background-50" : "bg-background-200 text-foreground-600"
+              }`}
+            >
+              {item.count}
+            </span>
+          ) : null}
         </>
       )}
     </NavLink>
@@ -55,7 +69,15 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void })
 
 export default function ConsoleSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { logout } = useAuth();
+  const { tickets } = useAppData();
   const navigate = useNavigate();
+  const queueOpen = useMemo(
+    () => tickets.filter((ticket) => isOpen(ticket.status)).length,
+    [tickets],
+  );
+  const navPrimary = NAV_PRIMARY.map((item) =>
+    item.to === "/console/queue" ? { ...item, count: queueOpen } : item,
+  );
 
   async function handleSignOut() {
     await logout();
@@ -104,7 +126,7 @@ export default function ConsoleSidebar({ open, onClose }: { open: boolean; onClo
             Operations
           </p>
           <div className="flex flex-col gap-0.5">
-            {NAV_PRIMARY.map((item) => (
+            {navPrimary.map((item) => (
               <NavRow key={item.to} item={item} onNavigate={onClose} />
             ))}
           </div>

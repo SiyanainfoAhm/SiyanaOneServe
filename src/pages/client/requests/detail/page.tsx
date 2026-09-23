@@ -1,14 +1,13 @@
 /**
- * Single government request: comments, files, reject with a mandatory reason.
+ * Single government request: comments, files, and request history.
  *
- * Resolved is terminal. Reject is available until the ticket is Resolved or Rejected.
+ * Resolved is terminal. Notes stay visible but become read-only after resolve.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ClientLayout from "@/pages/client/components/ClientLayout";
 import Card from "@/components/base/Card";
 import Tabs from "@/components/base/Tabs";
-import Button from "@/components/base/Button";
 import EmptyState from "@/components/base/EmptyState";
 import { TicketStatusBadge, PriorityBadge } from "@/components/base/StatusBadge";
 import NotesPanel, { type NoteEntry } from "@/components/feature/NotesPanel";
@@ -21,7 +20,7 @@ import { toClientDetail, toClientRequest } from "@/hooks/useClientRequestStore";
 import { api } from "@/services/api";
 import { formatDisplayDate } from "@/utils/date";
 import type { TicketRecord } from "@/types/oneserve";
-import { isClosedStatus, rejectionFromEvents } from "@/utils/ticketStats";
+import { isClosedStatus } from "@/utils/ticketStats";
 
 export default function ClientRequestDetailPage() {
   const params = useParams();
@@ -34,9 +33,6 @@ export default function ClientRequestDetailPage() {
   const [draft, setDraft] = useState("");
   const [banner, setBanner] = useState("");
   const [saving, setSaving] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [rejectError, setRejectError] = useState("");
 
   const request = useMemo(() => {
     const ticket = live ?? tickets.find((item) => item.id === id);
@@ -59,6 +55,30 @@ export default function ClientRequestDetailPage() {
       .catch(() => setLive(null))
       .finally(() => setLoading(false));
   }, [id, replaceTicket]);
+
+  // Keep open request in sync when another user assigns or updates it.
+  useEffect(() => {
+    if (!live) return;
+    const listed = tickets.find((ticket) => ticket.id === id);
+    if (!listed) return;
+    if (
+      listed.status === live.status &&
+      listed.assignee === live.assignee &&
+      listed.team === live.team &&
+      listed.updated_at === live.updated_at
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void api.getTicket(id).then((ticket) => {
+      if (cancelled) return;
+      setLive(ticket);
+      replaceTicket(ticket);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tickets, id, live, replaceTicket]);
 
   if (loading && !request) {
     return (
@@ -126,28 +146,6 @@ export default function ClientRequestDetailPage() {
     }
   }
 
-  async function confirmReject() {
-    if (!reason.trim()) {
-      setRejectError("A rejection reason is mandatory.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const ticket = await api.rejectTicket(id, reason.trim());
-      setLive(ticket);
-      replaceTicket(ticket);
-      setRejectOpen(false);
-      setReason("");
-      setRejectError("");
-      flash("Request rejected. The Siyana team has been notified.");
-      await refresh();
-    } catch (err) {
-      flash(err instanceof Error ? err.message : "Unable to reject this request.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <ClientLayout>
       <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-500">
@@ -187,11 +185,6 @@ export default function ClientRequestDetailPage() {
             assigneeInitials={detail.assigneeInitials}
             assigneeRole={detail.assignedTeam}
             requester={{ name: live?.requester || user?.full_name || "Requester", role: live?.requester_role || user?.role || "Requester" }}
-            rejection={rejectionFromEvents(request.status, live?.events, request.updated, {
-              reason: live?.rejection_reason,
-              by: live?.rejected_by,
-              at: live?.rejected_at ? formatDisplayDate(live.rejected_at) : request.updated,
-            })}
           />
         </div>
 
@@ -260,11 +253,7 @@ export default function ClientRequestDetailPage() {
               onDraft={setDraft}
               onSend={() => void handleSend()}
               readOnly={closed}
-              readOnlyHint={
-                request.status.toLowerCase() === "rejected"
-                  ? "This request is rejected. Notes are read-only."
-                  : "This request is resolved. Notes are read-only."
-              }
+              readOnlyHint="This request is resolved. Notes are read-only."
             />
           ) : null}
 
@@ -279,26 +268,13 @@ export default function ClientRequestDetailPage() {
                 <button
                   type="button"
                   onClick={() => setTab("notes")}
+                  disabled={saving}
                   className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-background-300 bg-background-50 px-3 text-xs font-label font-medium text-foreground-800 hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <span className="w-4 h-4 flex items-center justify-center">
                     <i className="ri-chat-3-line text-[14px] leading-none"></i>
                   </span>
                   Add Comment
-                </button>
-              ) : null}
-              {!closed ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRejectOpen(true);
-                    setReason("");
-                    setRejectError("");
-                  }}
-                  className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[oklch(var(--status-danger)/0.4)] bg-[oklch(var(--status-danger)/0.08)] px-3 text-xs font-label font-medium text-[oklch(var(--status-danger))] hover:bg-[oklch(var(--status-danger)/0.14)] transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-close-circle-line text-[14px] leading-none"></i>
-                  Reject Ticket
                 </button>
               ) : null}
               <Link
@@ -310,48 +286,6 @@ export default function ClientRequestDetailPage() {
               </Link>
             </div>
           </section>
-
-          {rejectOpen ? (
-            <section className="rounded-lg border border-[oklch(var(--status-danger)/0.3)] bg-[oklch(var(--status-danger)/0.05)] p-4">
-              <label htmlFor="client-reject" className="block text-xs font-label font-semibold text-foreground-800">
-                Reason for rejection <span className="text-[oklch(var(--status-danger))]">*</span>
-              </label>
-              <textarea
-                id="client-reject"
-                value={reason}
-                onChange={(event) => {
-                  setReason(event.target.value);
-                  setRejectError("");
-                }}
-                rows={3}
-                maxLength={300}
-                placeholder="e.g. Requirement no longer required, wrong request created…"
-                className="mt-1.5 w-full resize-none rounded-md border border-background-300 bg-background-50 px-3 py-2 text-sm text-foreground-900 placeholder:text-foreground-400 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-              />
-              {rejectError ? (
-                <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-[oklch(var(--status-danger))]">
-                  <i className="ri-error-warning-line text-[13px] leading-none mt-0.5"></i>
-                  {rejectError}
-                </p>
-              ) : null}
-              <div className="mt-3 flex items-center justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setRejectOpen(false);
-                    setReason("");
-                    setRejectError("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button variant="danger" size="sm" icon="ri-close-line" onClick={() => void confirmReject()} disabled={saving}>
-                  Confirm Reject
-                </Button>
-              </div>
-            </section>
-          ) : null}
 
           <section className="rounded-lg border border-background-200 bg-background-100 p-4">
             <div className="flex items-start gap-2.5">

@@ -16,13 +16,14 @@ import TicketAttachments from "@/components/feature/TicketAttachments";
 import NotesPanel, { type NoteEntry } from "@/components/feature/NotesPanel";
 import TimelinePanel from "@/pages/console/tickets/components/TimelinePanel";
 import ActionPanel from "@/pages/console/tickets/components/ActionPanel";
+import ResolveTicketModal from "@/pages/console/tickets/components/ResolveTicketModal";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/services/api";
 import { formatDisplayDate } from "@/utils/date";
 import type { TicketRecord } from "@/types/oneserve";
 import { USER_TEAMS } from "@/pages/console/users/components/UserFormModal";
-import { isClosedStatus, rejectionFromEvents } from "@/utils/ticketStats";
+import { isClosedStatus } from "@/utils/ticketStats";
 
 function initialsOf(name: string): string {
   return name
@@ -43,6 +44,7 @@ function TicketWorkbench({ id }: { id: string }) {
   const [teamDraft, setTeamDraft] = useState("");
   const [userDraft, setUserDraft] = useState("");
   const [toast, setToast] = useState("");
+  const [resolveOpen, setResolveOpen] = useState(false);
 
   const row = useMemo(() => tickets.find((ticket) => ticket.id === id) ?? detail, [tickets, detail, id]);
 
@@ -74,6 +76,35 @@ function TicketWorkbench({ id }: { id: string }) {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Poll/focus refresh updates AppData; reload full ticket when assignment or status changes.
+  useEffect(() => {
+    if (!detail) return;
+    const listed = tickets.find((ticket) => ticket.id === id);
+    if (!listed) return;
+    if (
+      listed.status === detail.status &&
+      listed.assignee === detail.assignee &&
+      listed.team === detail.team &&
+      listed.updated_at === detail.updated_at
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void api.getTicket(id).then((ticket) => {
+      if (cancelled) return;
+      setDetail(ticket);
+      const assigneeName = ticket.assignee !== "Unassigned" ? ticket.assignee : "";
+      setUserDraft(assigneeName);
+      if (ticket.team && ticket.team !== "Unassigned") {
+        setTeamDraft(ticket.team);
+      }
+      replaceTicket(ticket);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tickets, id, detail, replaceTicket]);
 
   const staffByTeam = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -186,19 +217,13 @@ function TicketWorkbench({ id }: { id: string }) {
     await refresh();
   }
 
-  async function handleResolve() {
-    const ticket = await api.updateTicket({ id, status: "Resolved" });
+  async function handleResolve(comment: string) {
+    const ticket = await api.updateTicket({ id, status: "Resolved", resolve_note: comment });
     setDetail(ticket);
     replaceTicket(ticket);
+    setResolveOpen(false);
+    setCenterTab("notes");
     showToast("Ticket marked Resolved");
-    await refresh();
-  }
-
-  async function handleReject(reason: string) {
-    const ticket = await api.rejectTicket(id, reason);
-    setDetail(ticket);
-    replaceTicket(ticket);
-    showToast("Ticket rejected");
     await refresh();
   }
 
@@ -246,11 +271,6 @@ function TicketWorkbench({ id }: { id: string }) {
               email: live.requester_email,
               organization: live.organization,
             }}
-            rejection={rejectionFromEvents(live.status, live.events, live.updated, {
-              reason: live.rejection_reason,
-              by: live.rejected_by,
-              at: live.rejected_at ? formatDisplayDate(live.rejected_at) : live.updated,
-            })}
           />
         </div>
 
@@ -323,11 +343,7 @@ function TicketWorkbench({ id }: { id: string }) {
               onDraft={setDraft}
               onSend={() => void handleSend()}
               readOnly={notesLocked}
-              readOnlyHint={
-                live.status.toLowerCase() === "rejected"
-                  ? "This ticket is rejected. Notes are read-only."
-                  : "This ticket is resolved. Notes are read-only."
-              }
+              readOnlyHint="This ticket is resolved. Notes are read-only."
             />
           ) : null}
 
@@ -361,13 +377,20 @@ function TicketWorkbench({ id }: { id: string }) {
             priority={live.priority}
             onAssign={() => void handleAssign()}
             onStartWork={() => void handleStartWork()}
-            onResolve={() => void handleResolve()}
-            onReject={(reason) => void handleReject(reason)}
+            onResolve={() => setResolveOpen(true)}
             teams={teamOptions}
             assignees={assigneeOptions}
           />
         </div>
       </div>
+
+      {resolveOpen ? (
+        <ResolveTicketModal
+          ticketId={live.id}
+          onClose={() => setResolveOpen(false)}
+          onConfirm={handleResolve}
+        />
+      ) : null}
 
       {toast ? (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-lg border border-background-200 bg-foreground-950 px-4 py-3 shadow-lg">

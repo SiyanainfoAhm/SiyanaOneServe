@@ -9,7 +9,7 @@ const CATEGORY_TONES = ["primary", "accent", "secondary"] as const;
 const CATEGORY_ICONS = ["ri-global-line", "ri-code-s-slash-line", "ri-customer-service-2-line", "ri-file-text-line"];
 
 export function isOpenStatus(status: string) {
-  return !["Resolved", "Closed", "Rejected"].includes(status);
+  return !["Resolved", "Closed"].includes(status);
 }
 
 export function ticketTrendSeries(tickets: TicketRecord[], days = 14, today = todayIso()) {
