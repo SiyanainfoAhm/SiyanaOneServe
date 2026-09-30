@@ -3,7 +3,7 @@
  *
  * PortalGuard: must be signed in AND `user.portal` must match this shell.
  * GuestOnly: bounce signed-in users to their home dashboard.
- * Login itself also enforces portal vs role in `sosticket_login`.
+ * Shared sign-in accepts both portals; protected routes enforce portal access.
  */
 import { Navigate, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -27,7 +27,7 @@ export function PortalGuard({ portal, children }: { portal: Portal; children: Re
 
   if (!ready) return <LoadingScreen />;
   if (!user) {
-    return <Navigate to={portal === "console" ? "/console/signin" : "/client/signin"} replace state={{ from: location.pathname }} />;
+    return <Navigate to="/signin" replace state={{ from: location.pathname }} />;
   }
   if (user.portal !== portal) {
     // Wrong shell (e.g. staff token hitting /client/*) — send them home, do not render.
@@ -36,7 +36,7 @@ export function PortalGuard({ portal, children }: { portal: Portal; children: Re
   return <>{children}</>;
 }
 
-export function GuestOnly({ portal, children }: { portal: Portal; children: ReactNode }) {
+export function GuestOnly({ children }: { children: ReactNode }) {
   const { ready, user } = useAuth();
   if (!ready) return <LoadingScreen />;
   if (user) {

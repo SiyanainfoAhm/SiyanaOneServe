@@ -28,8 +28,8 @@ function tokenOrThrow(token?: string | null) {
 }
 
 export const api = {
-  /** Rejects if this role is not allowed on `portal` (see sosticket_login). */
-  login(email: string, password: string, keepSignedIn: boolean, portal: "console" | "client") {
+  /** A null portal allows shared sign-in; explicit portals restrict eligible roles. */
+  login(email: string, password: string, keepSignedIn: boolean, portal: "console" | "client" | null) {
     return rpc<LoginResult>("sosticket_login", {
       p_email: email,
       p_password: password,

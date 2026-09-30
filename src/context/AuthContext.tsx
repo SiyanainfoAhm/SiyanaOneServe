@@ -1,8 +1,7 @@
 /**
  * Signed-in user and session token.
  *
- * `login(..., portal)` must be `"console"` or `"client"`. The RPC rejects
- * government roles on staff sign-in and staff roles on client sign-in.
+ * Pass null for shared sign-in, or a portal to restrict sign-in to its roles.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { clearSessionToken, getSessionToken, setSessionToken } from "@/lib/session";
@@ -16,7 +15,7 @@ interface AuthContextValue {
   portal: Portal | null;
   token: string | null;
   queueOpen: number;
-  login: (email: string, password: string, keepSignedIn: boolean, portal: Portal) => Promise<SessionUser>;
+  login: (email: string, password: string, keepSignedIn: boolean, portal: Portal | null) => Promise<SessionUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setUser: (user: SessionUser) => void;
@@ -57,8 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void hydrate();
   }, [hydrate]);
 
-  // portal must be "console" or "client"; the RPC rejects the wrong role for that shell.
-  const login = useCallback(async (email: string, password: string, keepSignedIn: boolean, portal: Portal) => {
+  // A null portal lets the RPC authenticate either staff or government clients.
+  const login = useCallback(async (email: string, password: string, keepSignedIn: boolean, portal: Portal | null) => {
     const result = await api.login(email, password, keepSignedIn, portal);
     setSessionToken(result.token);
     setToken(result.token);

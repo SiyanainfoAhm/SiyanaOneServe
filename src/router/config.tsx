@@ -7,7 +7,6 @@ import type { RouteObject } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { GuestOnly, PortalGuard } from "@/components/auth/PortalGuard";
 import NotFound from "@/pages/NotFound";
-import Landing from "@/pages/landing/page";
 import ConsoleSignin from "@/pages/console/signin/page";
 import ConsoleDashboard from "@/pages/console/dashboard/page";
 import ConsoleCreate from "@/pages/console/create/page";
@@ -19,7 +18,7 @@ import ConsoleReports from "@/pages/console/reports/page";
 import ConsoleUsers from "@/pages/console/users/page";
 import ConsoleNotifications from "@/pages/console/notifications/page";
 import ConsoleSettings from "@/pages/console/settings/page";
-import ClientSignin from "@/pages/client/signin/page";
+
 import ClientDashboard from "@/pages/client/dashboard/page";
 import ClientCreate from "@/pages/client/create/page";
 import ClientMyRequests from "@/pages/client/requests/page";
@@ -36,21 +35,19 @@ function clientPage(element: ReactNode) {
 }
 
 const routes: RouteObject[] = [
+  { path: "/", element: <Navigate to="/signin" replace /> },
+  
   {
-    path: "/",
-    element: <Landing />,
-  },
-  {
-    path: "/console",
-    element: <Navigate to="/console/dashboard" replace />,
-  },
-  {
-    path: "/console/signin",
+    path: "/signin",
     element: (
-      <GuestOnly portal="console">
+      <GuestOnly>
         <ConsoleSignin />
       </GuestOnly>
     ),
+  },
+  {
+    path: "/console/signin",
+    element: <Navigate to="/signin" replace />,
   },
   {
     path: "/console/dashboard",
@@ -98,11 +95,7 @@ const routes: RouteObject[] = [
   },
   {
     path: "/client/signin",
-    element: (
-      <GuestOnly portal="client">
-        <ClientSignin />
-      </GuestOnly>
-    ),
+    element: <Navigate to="/signin" replace />,
   },
   {
     path: "/client/dashboard",

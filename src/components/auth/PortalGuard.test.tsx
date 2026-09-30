@@ -22,8 +22,7 @@ function renderAt(path: string, ui: ReactElement) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path={path} element={ui} />
-        <Route path="/console/signin" element={<p>console-signin</p>} />
-        <Route path="/client/signin" element={<p>client-signin</p>} />
+        <Route path="/signin" element={<p>shared-signin</p>} />
         <Route path="/console/dashboard" element={<p>console-home</p>} />
         <Route path="/client/dashboard" element={<p>client-home</p>} />
       </Routes>
@@ -39,11 +38,11 @@ describe("PortalGuard", () => {
     expect(screen.getByText("Loading workspace…")).toBeInTheDocument();
   });
 
-  it("sends guests to the matching sign-in page", () => {
+  it.each(["console", "client"] as const)("sends %s guests to the shared sign-in page", (portal) => {
     authState.ready = true;
     authState.user = null;
-    renderAt("/console/queue", <PortalGuard portal="console">queue</PortalGuard>);
-    expect(screen.getByText("console-signin")).toBeInTheDocument();
+    renderAt(`/${portal}/dashboard`, <PortalGuard portal={portal}>dashboard</PortalGuard>);
+    expect(screen.getByText("shared-signin")).toBeInTheDocument();
   });
 
   it("renders children when the signed-in portal matches", () => {
@@ -65,14 +64,14 @@ describe("GuestOnly", () => {
   it("renders sign-in when there is no session", () => {
     authState.ready = true;
     authState.user = null;
-    renderAt("/client/signin", <GuestOnly portal="client">signin-form</GuestOnly>);
+    renderAt("/signin", <GuestOnly>signin-form</GuestOnly>);
     expect(screen.getByText("signin-form")).toBeInTheDocument();
   });
 
   it("sends a signed-in staff user to the console dashboard", () => {
     authState.ready = true;
     authState.user = makeUser();
-    renderAt("/console/signin", <GuestOnly portal="console">signin-form</GuestOnly>);
+    renderAt("/signin", <GuestOnly>signin-form</GuestOnly>);
     expect(screen.getByText("console-home")).toBeInTheDocument();
   });
 });

@@ -56,7 +56,7 @@ export default function ClientSidebar({ open, onClose }: { open: boolean; onClos
 
   async function handleSignOut() {
     await logout();
-    navigate("/client/signin");
+    navigate("/signin");
   }
 
   return (
