@@ -81,7 +81,7 @@ export default function ConsoleSidebar({ open, onClose }: { open: boolean; onClo
 
   async function handleSignOut() {
     await logout();
-    navigate("/console/signin");
+    navigate("/signin");
   }
   return (
     <>

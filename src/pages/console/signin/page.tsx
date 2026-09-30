@@ -1,13 +1,12 @@
 /**
- * Operations Console sign-in.
- *
- * login(..., "console") — government nodal/requester roles are rejected by sosticket_login.
+ * Shared sign-in for Siyana staff and government clients.
  */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "@/components/base/Button";
 import ForgotPasswordModal from "@/components/feature/ForgotPasswordModal";
 import { useAuth } from "@/context/AuthContext";
+import { portalForRole } from "@/lib/roles";
 
 const HIGHLIGHTS = [
   { icon: "ri-shield-keyhole-line", text: "Role-based access for every Siyana team" },
@@ -35,9 +34,8 @@ export default function ConsoleSignin() {
     setError("");
     setLoading(true);
     try {
-      // Hard-lock: staff cannot use this form; RPC also rejects government roles on /console/signin.
-      await login(email.trim(), password, keepSignedIn, "console");
-      navigate("/console/dashboard");
+      const user = await login(email.trim(), password, keepSignedIn, null);
+      navigate(`/${portalForRole(user.role_key || user.role)}/dashboard`, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");
     } finally {
@@ -58,16 +56,16 @@ export default function ConsoleSignin() {
                 Siyana OneServe
               </span>
               <span className="block text-[11px] text-foreground-500 leading-tight">
-                Internal Operations Console
+                Staff and Government Client Portal
               </span>
             </span>
           </Link>
 
           <h1 className="mt-8 font-heading text-2xl font-bold text-foreground-950">
-            Siyana staff sign in
+            SiyanaOne sign in
           </h1>
           <p className="mt-2 text-sm text-foreground-500">
-            Access the operations console to manage government projects, tickets, and SLA.
+            Siyana staff and government clients can sign in here to access their own dashboard.
           </p>
 
           <form className="mt-7 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>

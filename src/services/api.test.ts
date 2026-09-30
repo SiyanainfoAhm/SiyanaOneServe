@@ -24,6 +24,17 @@ vi.mock("@/lib/session", () => ({
 import { api } from "@/services/api";
 
 describe("api", () => {
+  it("allows role-based shared sign-in with a null portal", async () => {
+    rpcMock.mockResolvedValue({ token: "t" });
+    await api.login("person@example.com", "password", true, null);
+    expect(rpcMock).toHaveBeenCalledWith("sosticket_login", {
+      p_email: "person@example.com",
+      p_password: "password",
+      p_keep_signed_in: true,
+      p_portal: null,
+    });
+  });
+
   beforeEach(() => {
     rpcMock.mockReset();
     sendForgotPasswordEmail.mockReset();
