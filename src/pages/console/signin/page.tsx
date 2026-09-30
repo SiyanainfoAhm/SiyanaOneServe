@@ -56,7 +56,7 @@ export default function ConsoleSignin() {
                 Siyana OneServe
               </span>
               <span className="block text-[11px] text-foreground-500 leading-tight">
-                Staff and Government Client Portal
+                Siyana OneServe Portal
               </span>
             </span>
           </Link>
