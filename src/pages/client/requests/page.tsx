@@ -16,6 +16,7 @@ import { useProjectScope, setScopedProject } from "@/hooks/useProjectScope";
 import { createDateRange, matchesDateRange, CUSTOM_RANGE, ALL_TIME, type DateRangeValue, todayIso } from "@/utils/date";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
+import { activeProjects } from "@/utils/projects";
 
 const TODAY = todayIso();
 
@@ -32,7 +33,7 @@ export default function ClientMyRequestsPage() {
   const project = useProjectScope();
   const { user } = useAuth();
   const { projects } = useAppData();
-  const projectOptions = ["All Projects", ...projects.map((item) => item.name)];
+  const projectOptions = ["All Projects", ...activeProjects(projects).map((item) => item.name)];
   const [tab, setTab] = useState("All");
   const [search, setSearch] = useState(queryParam);
   const [dateRange, setDateRange] = useState<DateRangeValue>(createDateRange(ALL_TIME));

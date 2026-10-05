@@ -20,6 +20,7 @@ import {
   projectStatusOptions,
   type Project,
 } from "@/mocks/consoleProjects";
+import { isSelectableOrganization } from "@/utils/organization";
 
 const STATUS_TONE: Record<string, Tone> = {
   Active: "success",
@@ -39,7 +40,7 @@ export default function ProjectsPage() {
   const projects = useProjects();
   const { refresh, organizations } = useAppData();
   const orgFilterOptions = useMemo(
-    () => ["All Organizations", ...organizations.map((item) => item.name)],
+    () => ["All Organizations", ...organizations.map((item) => item.name).filter(isSelectableOrganization)],
     [organizations],
   );
   const scope = useProjectScope();

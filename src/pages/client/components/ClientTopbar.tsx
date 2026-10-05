@@ -10,6 +10,7 @@ import Avatar from "@/components/base/Avatar";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useProjectScope, setScopedProject, ALL_PROJECTS } from "@/hooks/useProjectScope";
+import { activeProjects } from "@/utils/projects";
 
 const TONE_DOT: Record<string, string> = {
   danger: "bg-[oklch(var(--status-danger))]",
@@ -24,9 +25,16 @@ export default function ClientTopbar({ onMenu }: { onMenu: () => void }) {
   const { notifications, projects, markNotificationsRead } = useAppData();
   const [openNotif, setOpenNotif] = useState(false);
   const scopedProject = useProjectScope();
-  const projectOptions = [ALL_PROJECTS, ...projects.map((item) => item.name)];
+  const activeProjectOptions = activeProjects(projects);
+  const projectOptions = [ALL_PROJECTS, ...activeProjectOptions.map((item) => item.name)];
   const unread = notifications.filter((item) => !item.read);
   const notifRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (scopedProject !== ALL_PROJECTS && !activeProjectOptions.some((project) => project.name === scopedProject)) {
+      setScopedProject(ALL_PROJECTS);
+    }
+  }, [activeProjectOptions, scopedProject]);
 
   useEffect(() => {
     function onClick(event: MouseEvent) {

@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "@/context/AppDataContext";
 import { setScopedProject } from "@/hooks/useProjectScope";
+import { isActiveProject } from "@/utils/projects";
 
 type PortalMode = "console" | "client";
 
@@ -69,7 +70,7 @@ export default function GlobalSearch({ mode, placeholder }: GlobalSearchProps) {
       .slice(0, 6);
 
     const projectHits: SearchHit[] = projects
-      .filter((project) => matches(`${project.name} ${project.code} ${project.organization}`, term))
+      .filter((project) => isActiveProject(project) && matches(`${project.name} ${project.code} ${project.organization}`, term))
       .slice(0, 4)
       .map((project) => ({
         kind: "project",

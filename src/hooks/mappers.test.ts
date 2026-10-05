@@ -12,6 +12,7 @@ describe("ticket and project mappers", () => {
       title: "Portal login delay",
       project: "OneServe",
       status: "New",
+      requester: "Meera Joshi",
     });
   });
 
@@ -68,6 +69,8 @@ describe("ticket and project mappers", () => {
 
   it("maps a ProjectRecord and generates a project code", () => {
     expect(toProject(makeProject()).code).toBe("CCS-001");
+    expect(toProject(makeProject({ status: "active" })).status).toBe("Active");
+    expect(toProject(makeProject({ status: "inactive" })).status).toBe("Inactive");
     expect(generateProjectCode("Chaudhary Charan Singh Haryana", 0)).toBe("CCS-100");
     expect(generateProjectCode("", 5)).toBe("PRJ-105");
   });

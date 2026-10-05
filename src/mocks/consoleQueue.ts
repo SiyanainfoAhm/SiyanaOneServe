@@ -9,6 +9,7 @@ export interface QueueTicket {
   status: string;
   priority: string;
   assignee: string;
+  requester?: string;
   team: string;
   created: string;
   category?: string;

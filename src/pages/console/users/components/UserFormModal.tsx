@@ -13,6 +13,8 @@ import { useProjects } from "@/hooks/useProjectStore";
 import { useAppData } from "@/context/AppDataContext";
 import { generateInvitePassword } from "@/utils/credentials";
 import type { ConsoleUser } from "@/mocks/consoleUsers";
+import { isSelectableOrganization } from "@/utils/organization";
+import { activeProjects } from "@/utils/projects";
 
 export const USER_ROLES = [
   "Super Admin",
@@ -57,10 +59,12 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
   const orgOptions = useMemo(() => {
     const names = new Set<string>();
     organizations.forEach((org) => {
-      if (org.name) names.add(org.name);
+      if (org.name && isSelectableOrganization(org.name)) names.add(org.name);
     });
-    projects.forEach((project) => {
-      if (project.organization) names.add(project.organization);
+    activeProjects(projects).forEach((project) => {
+      if (project.organization && isSelectableOrganization(project.organization)) {
+        names.add(project.organization);
+      }
     });
     if (user?.organization) names.add(user.organization);
     return Array.from(names).sort((a, b) => a.localeCompare(b));
@@ -84,9 +88,15 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
   const isGovernment = isGovernmentRole(role);
   const isCreate = mode === "create";
   const orgProjects = useMemo(
-    () => (organization ? projects.filter((project) => project.organization === organization) : []),
+    () =>
+      organization
+        ? activeProjects(projects).filter((project) => project.organization === organization)
+        : [],
     [projects, organization],
   );
+  const visibleSelectedProjectCount = activeProjects(projects).filter((project) =>
+    selectedProjects.includes(project.name),
+  ).length;
 
   function toggleProject(projectName: string) {
     setSelectedProjects((prev) =>
@@ -323,7 +333,7 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
                 <div className="rounded-lg border border-background-200 bg-background-100 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-label font-semibold text-foreground-800">Assign projects (optional)</p>
-                    <span className="text-[11px] text-foreground-500">{selectedProjects.length} selected</span>
+                    <span className="text-[11px] text-foreground-500">{visibleSelectedProjectCount} selected</span>
                   </div>
                   <p className="mt-0.5 text-[11px] text-foreground-500">
                     {organization

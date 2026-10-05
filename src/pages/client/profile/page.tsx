@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/services/api";
 import { projectNamesOf } from "@/utils/liveStats";
+import { activeProjects } from "@/utils/projects";
 
 export default function ClientProfilePage() {
   const { user, setUser, refreshUser } = useAuth();
@@ -16,7 +17,7 @@ export default function ClientProfilePage() {
   if (!user) return null;
 
   const assigned = projectNamesOf(user.projects as Array<string | { name: string }>);
-  const accountProjects = projects
+  const accountProjects = activeProjects(projects)
     .filter((project) => assigned.length === 0 || assigned.includes(project.name))
     .map((project) => ({
       code: project.code,

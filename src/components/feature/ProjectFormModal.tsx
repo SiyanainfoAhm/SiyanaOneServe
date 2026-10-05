@@ -12,6 +12,7 @@ import {
   type Project,
 } from "@/mocks/consoleProjects";
 import { useAppData } from "@/context/AppDataContext";
+import { isSelectableOrganization } from "@/utils/organization";
 
 export interface ProjectFormValues {
   name: string;
@@ -32,7 +33,9 @@ interface ProjectFormModalProps {
 export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: ProjectFormModalProps) {
   const { organizations, users } = useAppData();
   const liveOrgs = useMemo(() => {
-    const names = organizations.map((org) => org.name).filter(Boolean);
+    const names = organizations
+      .map((org) => org.name)
+      .filter((name) => name && isSelectableOrganization(name));
     if (initial?.organization && !names.includes(initial.organization)) names.push(initial.organization);
     const sorted = names.sort((a, b) => a.localeCompare(b));
     return sorted.length > 0 ? sorted : ["Siyana"];
@@ -65,6 +68,10 @@ export default function ProjectFormModal({ mode, initial, onClose, onSubmit }: P
     }
     if (!finalOrg || finalOrg === ADD_ORG_VALUE) {
       setError("Please enter the new organization name.");
+      return;
+    }
+    if (creatingOrg && !isSelectableOrganization(finalOrg)) {
+      setError("This organization is not available for new projects.");
       return;
     }
     setSaving(true);

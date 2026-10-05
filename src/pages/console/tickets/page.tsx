@@ -5,7 +5,7 @@
  * Notes posted here are visible on the government request thread as well.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import ConsoleLayout from "@/pages/console/components/ConsoleLayout";
 import Card from "@/components/base/Card";
 import Tabs from "@/components/base/Tabs";
@@ -35,6 +35,12 @@ function initialsOf(name: string): string {
 }
 
 function TicketWorkbench({ id }: { id: string }) {
+  const location = useLocation();
+  const requestedReturnPath = (location.state as { from?: unknown } | null)?.from;
+  const returnToQueue =
+    typeof requestedReturnPath === "string" && requestedReturnPath.startsWith("/console/queue")
+      ? requestedReturnPath
+      : "/console/queue";
   const { user } = useAuth();
   const { tickets, users, refresh, replaceTicket } = useAppData();
   const [detail, setDetail] = useState<TicketRecord | null>(null);
@@ -161,7 +167,7 @@ function TicketWorkbench({ id }: { id: string }) {
             description="This ticket may have been removed or you may not have access to it."
             action={
               <Link
-                to="/console/queue"
+                to={returnToQueue}
                 className="inline-flex items-center gap-2 rounded-md bg-primary-600 px-4 py-2.5 text-sm font-medium text-background-50 hover:bg-primary-700 transition-colors cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-arrow-left-line text-[15px] leading-none"></i>
@@ -231,7 +237,7 @@ function TicketWorkbench({ id }: { id: string }) {
     <ConsoleLayout>
       <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-500">
         <Link
-          to="/console/queue"
+          to={returnToQueue}
           className="inline-flex items-center gap-1.5 hover:text-foreground-800 transition-colors cursor-pointer"
         >
           <i className="ri-arrow-left-line text-[14px] leading-none"></i>

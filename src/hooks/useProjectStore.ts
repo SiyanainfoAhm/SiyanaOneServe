@@ -13,7 +13,7 @@ export function toProject(project: ProjectRecord): Project {
     name: project.name,
     code: project.code,
     organization: project.organization,
-    status: project.status === "Active" ? "Active" : "Inactive",
+    status: project.status.trim().toLowerCase() === "active" ? "Active" : "Inactive",
     manager: project.manager,
     managerInitials: project.managerInitials,
     progress: Number(project.progress ?? 0),
