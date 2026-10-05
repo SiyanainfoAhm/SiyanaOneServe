@@ -18,6 +18,8 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
 import { requestPriorityOptions } from "@/mocks/client";
 import { projectNamesOf } from "@/utils/liveStats";
+import { isSelectableOrganization } from "@/utils/organization";
+import { activeProjects } from "@/utils/projects";
 
 const MAX_DESC = 500;
 const MAX_NOTE = 500;
@@ -86,17 +88,34 @@ export default function RequestForm({ mode }: { mode: RequestFormMode }) {
     [user?.projects],
   );
   const projectList = useMemo(() => {
-    const all = projects.map((project) => ({ name: project.name, organization: project.organization }));
+    const all = activeProjects(projects).map((project) => ({
+      name: project.name,
+      organization: project.organization,
+    }));
     if (isConsole || assignedNames.length === 0) return all;
     return all.filter((item) => assignedNames.includes(item.name));
   }, [projects, isConsole, assignedNames]);
 
   const organizationOptions = useMemo(() => {
-    const names = Array.from(new Set(organizations.map((org) => org.name).filter(Boolean)));
+    const names = Array.from(
+      new Set(organizations.map((org) => org.name).filter((name) => name && isSelectableOrganization(name))),
+    );
     projectList.forEach((item) => {
-      if (item.organization && !names.includes(item.organization)) names.push(item.organization);
+      if (
+        item.organization &&
+        isSelectableOrganization(item.organization) &&
+        !names.includes(item.organization)
+      ) {
+        names.push(item.organization);
+      }
     });
-    if (user?.organization && !names.includes(user.organization)) names.unshift(user.organization);
+    if (
+      user?.organization &&
+      isSelectableOrganization(user.organization) &&
+      !names.includes(user.organization)
+    ) {
+      names.unshift(user.organization);
+    }
     return names.sort((a, b) => a.localeCompare(b));
   }, [organizations, projectList, user?.organization]);
 
@@ -125,7 +144,7 @@ export default function RequestForm({ mode }: { mode: RequestFormMode }) {
     [projectList, organization],
   );
 
-  const canChangeOrganization = organizationOptions.length > 1;
+  const canChangeOrganization = isSelectableOrganization(organization) && organizationOptions.length > 1;
   const canChangeProject = projectsForOrganization.length > 1;
 
   function showToast(text: string) {

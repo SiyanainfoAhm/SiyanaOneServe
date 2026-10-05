@@ -20,8 +20,10 @@ import { useProjectScope, setScopedProject, ALL_PROJECTS } from "@/hooks/useProj
 import { matchesDateRange, createDateRange, ALL_TIME, type DateRangeValue, todayIso } from "@/utils/date";
 import { workbenchStatuses } from "@/mocks/consoleTicket";
 import Select from "@/components/base/Select";
+import { activeProjects } from "@/utils/projects";
 const TODAY = todayIso();
 const PAGE_SIZE = 10;
+const ASSIGNEE_FILTER_KEY = "console-ticket-queue-assignee";
 
 const STATUS_TABS = ["All", "New", "Assigned", "In Progress", "Resolved"];
 /** Resolve requires a comment on the ticket workbench. */
@@ -30,24 +32,44 @@ const BULK_STATUSES = workbenchStatuses.filter((status) => status !== "Resolved"
 const PRIORITY_ORDER: Record<string, number> = { Critical: 0, High: 1, Normal: 2, Low: 3 };
 
 export default function TicketQueuePage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const projectParam = searchParams.get("project") ?? "";
   const queryParam = searchParams.get("q") ?? "";
 
   const projects = useProjects();
   const project = useProjectScope();
   const projectOptions = useMemo(
-    () => [ALL_PROJECTS, ...projects.map((item) => item.name)],
+    () => [ALL_PROJECTS, ...activeProjects(projects).map((item) => item.name)],
     [projects],
   );
 
-  const [statusTab, setStatusTab] = useState("All");
+  const [statusTab, setStatusTab] = useState(() => {
+    const value = searchParams.get("status");
+    return value && STATUS_TABS.includes(value) ? value : "All";
+  });
   const [search, setSearch] = useState(queryParam);
-  const [priority, setPriority] = useState("All Priorities");
-  const [assignee, setAssignee] = useState("All Assignees");
-  const [dateRange, setDateRange] = useState<DateRangeValue>(createDateRange(ALL_TIME));
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "created", dir: "desc" });
-  const [page, setPage] = useState(1);
+  const [priority, setPriority] = useState(searchParams.get("priority") ?? "All Priorities");
+  const [assignee, setAssignee] = useState(
+    () => searchParams.get("assignee") ?? window.sessionStorage.getItem(ASSIGNEE_FILTER_KEY) ?? "All Assignees",
+  );
+  const [requester, setRequester] = useState(searchParams.get("requester") ?? "All Requesters");
+  const [dateRange, setDateRange] = useState<DateRangeValue>(() => ({
+    ...createDateRange(searchParams.get("date") ?? ALL_TIME),
+    from: searchParams.get("from") ?? "",
+    to: searchParams.get("to") ?? "",
+  }));
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>(() => {
+    const key = searchParams.get("sort");
+    const keys: SortKey[] = ["id", "title", "priority", "status", "assignee", "requester", "created"];
+    return {
+      key: key && keys.includes(key as SortKey) ? (key as SortKey) : "created",
+      dir: searchParams.get("dir") === "asc" ? "asc" : "desc",
+    };
+  });
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page"));
+    return Number.isInteger(value) && value > 0 ? value : 1;
+  });
   const [selected, setSelected] = useState<string[]>([]);
   const [toast, setToast] = useState("");
   const [bulkStatus, setBulkStatus] = useState("Assigned");
@@ -55,14 +77,29 @@ export default function TicketQueuePage() {
   const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
-    if (projectParam && projectOptions.includes(projectParam)) {
-      setScopedProject(projectParam);
+    if (assignee === "All Assignees") {
+      window.sessionStorage.removeItem(ASSIGNEE_FILTER_KEY);
+    } else {
+      window.sessionStorage.setItem(ASSIGNEE_FILTER_KEY, assignee);
     }
-  }, [projectParam, projectOptions]);
+  }, [assignee]);
+
+  function updateQueueParams(values: Record<string, string | null>) {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      Object.entries(values).forEach(([key, value]) => {
+        if (value) next.set(key, value);
+        else next.delete(key);
+      });
+      return next;
+    }, { replace: true });
+  }
 
   useEffect(() => {
-    if (queryParam) setSearch(queryParam);
-  }, [queryParam]);
+    if (projectParam && projectOptions.includes(projectParam) && project !== projectParam) {
+      setScopedProject(projectParam);
+    }
+  }, [project, projectParam, projectOptions, setSearchParams]);
 
   const rows = useConsoleTickets();
   const { refresh, replaceTicket, users } = useAppData();
@@ -77,6 +114,14 @@ export default function TicketQueuePage() {
     });
     return Array.from(names);
   }, [users, rows]);
+
+  const requesterOptions = useMemo(() => {
+    const names = new Set<string>(["All Requesters"]);
+    rows.forEach((ticket) => {
+      if (ticket.requester) names.add(ticket.requester);
+    });
+    return Array.from(names);
+  }, [rows]);
 
   const staffAssignees = useMemo(
     () =>
@@ -94,30 +139,36 @@ export default function TicketQueuePage() {
     window.setTimeout(() => setToast(""), 2600);
   }
 
-  const counts = useMemo(() => {
-    const map: Record<string, number> = { All: rows.length };
-    STATUS_TABS.forEach((status) => {
-      if (status === "All") return;
-      map[status] = rows.filter((ticket) => ticket.status === status).length;
-    });
-    return map;
-  }, [rows]);
-
-  const filtered = useMemo(() => {
+  const filteredByFilters = useMemo(() => {
     const term = search.trim().toLowerCase();
     return rows.filter((ticket) => {
-      if (statusTab !== "All" && ticket.status !== statusTab) return false;
-      if (project !== "All Projects" && ticket.project !== project) return false;
+      if (project !== ALL_PROJECTS && ticket.project !== project) return false;
       if (priority !== "All Priorities" && ticket.priority !== priority) return false;
       if (assignee !== "All Assignees" && ticket.assignee !== assignee) return false;
+      if (requester !== "All Requesters" && ticket.requester !== requester) return false;
       if (!matchesDateRange(ticket.created, dateRange, TODAY)) return false;
       if (term) {
-        const haystack = `${ticket.id} ${ticket.title} ${ticket.project} ${ticket.organization} ${ticket.assignee}`.toLowerCase();
+        const haystack = `${ticket.id} ${ticket.title} ${ticket.project} ${ticket.organization} ${ticket.assignee} ${ticket.requester}`.toLowerCase();
         if (!haystack.includes(term)) return false;
       }
       return true;
     });
-  }, [rows, statusTab, search, project, priority, assignee, dateRange]);
+  }, [rows, search, project, priority, assignee, requester, dateRange]);
+
+  const counts = useMemo(() => {
+    const map: Record<string, number> = { All: filteredByFilters.length };
+    STATUS_TABS.forEach((status) => {
+      if (status === "All") return;
+      map[status] = filteredByFilters.filter((ticket) => ticket.status === status).length;
+    });
+    return map;
+  }, [filteredByFilters]);
+
+  const filtered = useMemo(() => {
+    return statusTab === "All"
+      ? filteredByFilters
+      : filteredByFilters.filter((ticket) => ticket.status === statusTab);
+  }, [filteredByFilters, statusTab]);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -126,7 +177,11 @@ export default function TicketQueuePage() {
       if (sort.key === "priority") {
         result = (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
       } else {
-        result = a.created.localeCompare(b.created);
+        result = String(a[sort.key] ?? "").localeCompare(
+          String(b[sort.key] ?? ""),
+          undefined,
+          { numeric: true, sensitivity: "base" },
+        );
       }
       return sort.dir === "asc" ? result : -result;
     });
@@ -142,16 +197,29 @@ export default function TicketQueuePage() {
     project !== "All Projects" ||
     priority !== "All Priorities" ||
     assignee !== "All Assignees" ||
+    requester !== "All Requesters" ||
     dateRange.preset !== ALL_TIME ||
     statusTab !== "All";
 
   const allSelected = pageRows.length > 0 && pageRows.every((ticket) => selected.includes(ticket.id));
 
-  function updateFilter(setter: (value: string) => void) {
+  function updateFilter(setter: (value: string) => void, key: string, defaultValue: string) {
     return (value: string) => {
       setter(value);
+      updateQueueParams({ [key]: value === defaultValue ? null : value, page: null });
       setPage(1);
     };
+  }
+
+  function updateDateRange(value: DateRangeValue) {
+    setDateRange(value);
+    updateQueueParams({
+      date: value.preset === ALL_TIME ? null : value.preset,
+      from: value.from || null,
+      to: value.to || null,
+      page: null,
+    });
+    setPage(1);
   }
 
   function clearFilters() {
@@ -159,9 +227,22 @@ export default function TicketQueuePage() {
     setScopedProject(ALL_PROJECTS);
     setPriority("All Priorities");
     setAssignee("All Assignees");
+    setRequester("All Requesters");
     setDateRange(createDateRange(ALL_TIME));
     setStatusTab("All");
     setPage(1);
+    updateQueueParams({
+      project: null,
+      q: null,
+      priority: null,
+      assignee: null,
+      requester: null,
+      date: null,
+      from: null,
+      to: null,
+      status: null,
+      page: null,
+    });
   }
 
   function toggleRow(id: string) {
@@ -177,7 +258,11 @@ export default function TicketQueuePage() {
   }
 
   function handleSort(key: SortKey) {
-    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" }));
+    const next = sort.key === key
+      ? { key, dir: sort.dir === "asc" ? "desc" as const : "asc" as const }
+      : { key, dir: key === "priority" ? "asc" as const : "desc" as const };
+    setSort(next);
+    updateQueueParams({ sort: next.key, dir: next.dir });
   }
 
   async function handleBulkStatus() {
@@ -247,6 +332,7 @@ export default function TicketQueuePage() {
             onClick={() => {
               setScopedProject(ALL_PROJECTS);
               setPage(1);
+              updateQueueParams({ project: null, page: null });
             }}
             className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:text-primary-800 cursor-pointer"
           >
@@ -261,6 +347,7 @@ export default function TicketQueuePage() {
           value={statusTab}
           onChange={(key) => {
             setStatusTab(key);
+            updateQueueParams({ status: key === "All" ? null : key, page: null });
             setPage(1);
           }}
           items={STATUS_TABS.map((status) => ({
@@ -274,20 +361,24 @@ export default function TicketQueuePage() {
       <Card className="mt-4" padded={false}>
         <QueueFilters
           search={search}
-          onSearch={updateFilter(setSearch)}
+          onSearch={updateFilter(setSearch, "q", "")}
           project={project}
           projectOptions={projectOptions}
-          onProject={updateFilter(setScopedProject)}
-          priority={priority}
-          onPriority={updateFilter(setPriority)}
-          assignee={assignee}
-          assigneeOptions={assigneeOptions}
-          onAssignee={updateFilter(setAssignee)}
-          dateRange={dateRange}
-          onDateRange={(value) => {
-            setDateRange(value);
+          onProject={(value) => {
+            setScopedProject(value);
+            updateQueueParams({ project: value === ALL_PROJECTS ? null : value, page: null });
             setPage(1);
           }}
+          priority={priority}
+          onPriority={updateFilter(setPriority, "priority", "All Priorities")}
+          assignee={assignee}
+          assigneeOptions={assigneeOptions}
+          onAssignee={updateFilter(setAssignee, "assignee", "All Assignees")}
+          requester={requester}
+          requesterOptions={requesterOptions}
+          onRequester={updateFilter(setRequester, "requester", "All Requesters")}
+          dateRange={dateRange}
+          onDateRange={updateDateRange}
           onClear={clearFilters}
           hasActiveFilters={hasActiveFilters}
         />
@@ -361,7 +452,11 @@ export default function TicketQueuePage() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              onClick={() => {
+                const nextPage = Math.max(1, safePage - 1);
+                setPage(nextPage);
+                updateQueueParams({ page: nextPage === 1 ? null : String(nextPage) });
+              }}
               disabled={safePage === 1}
               className="w-8 h-8 rounded-md border border-background-200 flex items-center justify-center text-foreground-600 hover:bg-background-100 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Previous page"
@@ -374,7 +469,10 @@ export default function TicketQueuePage() {
                 <button
                   key={pageNumber}
                   type="button"
-                  onClick={() => setPage(pageNumber)}
+                  onClick={() => {
+                    setPage(pageNumber);
+                    updateQueueParams({ page: pageNumber === 1 ? null : String(pageNumber) });
+                  }}
                   className={`w-8 h-8 rounded-md text-xs font-label font-medium transition-colors cursor-pointer ${
                     pageNumber === safePage
                       ? "bg-primary-600 text-background-50"
@@ -387,7 +485,11 @@ export default function TicketQueuePage() {
             })}
             <button
               type="button"
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              onClick={() => {
+                const nextPage = Math.min(totalPages, safePage + 1);
+                setPage(nextPage);
+                updateQueueParams({ page: nextPage === 1 ? null : String(nextPage) });
+              }}
               disabled={safePage === totalPages}
               className="w-8 h-8 rounded-md border border-background-200 flex items-center justify-center text-foreground-600 hover:bg-background-100 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Next page"

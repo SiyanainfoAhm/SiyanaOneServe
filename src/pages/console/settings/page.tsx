@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/services/api";
 import { projectNamesOf } from "@/utils/liveStats";
+import { activeProjects } from "@/utils/projects";
 
 export default function SettingsPage() {
   const { user, setUser, refreshUser } = useAuth();
@@ -15,7 +16,11 @@ export default function SettingsPage() {
 
   if (!user) return null;
 
-  const accountProjects = (user.is_console ? projects : projects.filter((project) => projectNamesOf(user.projects as Array<string | { name: string }>).includes(project.name))).map((project) => ({
+  const accountProjects = (user.is_console
+    ? activeProjects(projects)
+    : activeProjects(projects).filter((project) =>
+        projectNamesOf(user.projects as Array<string | { name: string }>).includes(project.name),
+      )).map((project) => ({
     code: project.code,
     name: project.name,
     status: project.status,

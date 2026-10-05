@@ -2,14 +2,14 @@
  * Sortable ticket table. Row click opens /console/tickets/:id.
  * Status is display-only here; workflow changes happen on the workbench.
  */
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Avatar from "@/components/base/Avatar";
 import { PriorityBadge, TicketStatusBadge } from "@/components/base/StatusBadge";
 import EmptyState from "@/components/base/EmptyState";
 import { formatDisplayDate } from "@/utils/date";
 import type { QueueTicket } from "@/mocks/consoleQueue";
 
-export type SortKey = "created" | "priority";
+export type SortKey = "id" | "title" | "priority" | "status" | "assignee" | "requester" | "created";
 
 interface QueueTableProps {
   rows: QueueTicket[];
@@ -61,6 +61,10 @@ export default function QueueTable({
   sort,
   onSort,
 }: QueueTableProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const ticketLocation = `${location.pathname}${location.search}`;
+
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -73,7 +77,7 @@ export default function QueueTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[980px] border-collapse">
+      <table className="w-full min-w-[1120px] border-collapse">
         <thead>
           <tr className="border-b border-background-200 bg-background-50">
             <th className="w-12 px-4 py-2.5">
@@ -85,13 +89,24 @@ export default function QueueTable({
                 className="w-4 h-4 rounded border-background-300 accent-primary-600 cursor-pointer align-middle"
               />
             </th>
-            <th className={HEAD}>Ticket ID</th>
-            <th className={HEAD}>Request</th>
+            <th className={HEAD}>
+              <SortButton label="Ticket ID" active={sort.key === "id"} dir={sort.dir} onClick={() => onSort("id")} />
+            </th>
+            <th className={HEAD}>
+              <SortButton label="Request" active={sort.key === "title"} dir={sort.dir} onClick={() => onSort("title")} />
+            </th>
             <th className={HEAD}>
               <SortButton label="Priority" active={sort.key === "priority"} dir={sort.dir} onClick={() => onSort("priority")} />
             </th>
-            <th className={HEAD}>Status</th>
-            <th className={HEAD}>Assigned User</th>
+            <th className={HEAD}>
+              <SortButton label="Status" active={sort.key === "status"} dir={sort.dir} onClick={() => onSort("status")} />
+            </th>
+            <th className={HEAD}>
+              <SortButton label="Assigned User" active={sort.key === "assignee"} dir={sort.dir} onClick={() => onSort("assignee")} />
+            </th>
+            <th className={HEAD}>
+              <SortButton label="Requester" active={sort.key === "requester"} dir={sort.dir} onClick={() => onSort("requester")} />
+            </th>
             <th className={HEAD}>
               <SortButton label="Created" active={sort.key === "created"} dir={sort.dir} onClick={() => onSort("created")} />
             </th>
@@ -101,10 +116,12 @@ export default function QueueTable({
         <tbody>
           {rows.map((ticket) => {
             const isSelected = selected.includes(ticket.id);
+            const ticketPath = `/console/tickets/${encodeURIComponent(ticket.id)}`;
             return (
               <tr
                 key={ticket.id}
-                className={`border-b border-background-100 last:border-0 transition-colors ${
+                onClick={() => navigate(ticketPath, { state: { from: ticketLocation } })}
+                className={`cursor-pointer border-b border-background-100 last:border-0 transition-colors ${
                   isSelected ? "bg-primary-50/60" : "hover:bg-background-50"
                 }`}
               >
@@ -113,21 +130,28 @@ export default function QueueTable({
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => onToggle(ticket.id)}
+                    onClick={(event) => event.stopPropagation()}
                     aria-label={`Select ${ticket.id}`}
                     className="w-4 h-4 rounded border-background-300 accent-primary-600 cursor-pointer align-middle"
                   />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <Link
-                    to={`/console/tickets/${ticket.id}`}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigate(ticketPath, { state: { from: ticketLocation } });
+                    }}
                     className="font-mono text-xs font-medium text-primary-700 hover:text-primary-800 hover:underline cursor-pointer"
                   >
                     {ticket.id}
-                  </Link>
+                  </button>
                 </td>
                 <td className="px-4 py-3 max-w-[320px]">
                   <Link
-                    to={`/console/tickets/${ticket.id}`}
+                    to={ticketPath}
+                    state={{ from: ticketLocation }}
+                    onClick={(event) => event.stopPropagation()}
                     className="block text-sm font-medium text-foreground-900 hover:text-primary-700 transition-colors cursor-pointer truncate"
                   >
                     {ticket.title}
@@ -161,12 +185,17 @@ export default function QueueTable({
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-700">
+                  {ticket.requester || "—"}
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-foreground-500">
                   {formatDisplayDate(ticket.created)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-right">
                   <Link
-                    to={`/console/tickets/${ticket.id}`}
+                    to={ticketPath}
+                    state={{ from: ticketLocation }}
+                    onClick={(event) => event.stopPropagation()}
                     className="inline-flex w-8 h-8 items-center justify-center rounded-md border border-background-200 text-foreground-500 hover:bg-background-100 hover:text-foreground-900 transition-colors cursor-pointer"
                     aria-label={`Open ${ticket.id}`}
                   >

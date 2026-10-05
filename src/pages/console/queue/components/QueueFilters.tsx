@@ -21,6 +21,9 @@ interface QueueFiltersProps {
   assignee: string;
   assigneeOptions: string[];
   onAssignee: (value: string) => void;
+  requester: string;
+  requesterOptions: string[];
+  onRequester: (value: string) => void;
   dateRange: DateRangeValue;
   onDateRange: (value: DateRangeValue) => void;
   onClear: () => void;
@@ -38,6 +41,9 @@ export default function QueueFilters({
   assignee,
   assigneeOptions,
   onAssignee,
+  requester,
+  requesterOptions,
+  onRequester,
   dateRange,
   onDateRange,
   onClear,
@@ -54,7 +60,7 @@ export default function QueueFilters({
             type="text"
             value={search}
             onChange={(event) => onSearch(event.target.value)}
-            placeholder="Search by ticket ID, request, project or assignee…"
+            placeholder="Search by ticket ID, request, project, requester or assignee…"
             className="h-10 w-full rounded-md border border-background-300 bg-background-50 pl-9 pr-3 text-sm text-foreground-900 placeholder:text-foreground-400 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
           />
         </div>
@@ -65,6 +71,7 @@ export default function QueueFilters({
             value={project}
             onChange={(event) => onProject(event.target.value)}
             icon="ri-folders-line"
+            aria-label="Project"
             containerClassName="lg:w-[178px]"
           />
           <Select
@@ -72,6 +79,7 @@ export default function QueueFilters({
             value={priority}
             onChange={(event) => onPriority(event.target.value)}
             icon="ri-flag-line"
+            aria-label="Priority"
             containerClassName="lg:w-[150px]"
           />
           <Select
@@ -79,13 +87,24 @@ export default function QueueFilters({
             value={assignee}
             onChange={(event) => onAssignee(event.target.value)}
             icon="ri-user-line"
+            aria-label="Assigned to"
             containerClassName="lg:w-[160px]"
+          />
+          <Select
+            options={requesterOptions}
+            value={requester}
+            onChange={(event) => onRequester(event.target.value)}
+            icon="ri-user-search-line"
+            aria-label="Requested by"
+            title="Requested by"
+            containerClassName="lg:w-[170px]"
           />
           <Select
             options={queueDateOptions}
             value={dateRange.preset}
             onChange={(event) => onDateRange({ ...dateRange, preset: event.target.value })}
             icon="ri-calendar-line"
+            aria-label="Created date"
             containerClassName="lg:w-[150px]"
           />
         </div>

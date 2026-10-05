@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useProjects } from "@/hooks/useProjectStore";
 import { useProjectScope, setScopedProject, ALL_PROJECTS } from "@/hooks/useProjectScope";
+import { activeProjects } from "@/utils/projects";
 
 const TONE_DOT: Record<string, string> = {
   danger: "bg-[oklch(var(--status-danger))]",
@@ -25,8 +26,15 @@ export default function ConsoleTopbar({ onMenu }: { onMenu: () => void }) {
   const notifRef = useRef<HTMLDivElement | null>(null);
   const projects = useProjects();
   const scopedProject = useProjectScope();
-  const projectOptions = [ALL_PROJECTS, ...projects.map((project) => project.name)];
+  const activeProjectOptions = activeProjects(projects);
+  const projectOptions = [ALL_PROJECTS, ...activeProjectOptions.map((project) => project.name)];
   const unread = notifications.filter((item) => !item.read);
+
+  useEffect(() => {
+    if (scopedProject !== ALL_PROJECTS && !activeProjectOptions.some((project) => project.name === scopedProject)) {
+      setScopedProject(ALL_PROJECTS);
+    }
+  }, [activeProjectOptions, scopedProject]);
 
   useEffect(() => {
     function onClick(event: MouseEvent) {

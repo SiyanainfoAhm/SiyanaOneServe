@@ -17,6 +17,7 @@ export function toQueueTicket(ticket: TicketRecord): QueueTicket {
     status: ticket.status,
     priority: ticket.priority,
     assignee: ticket.assignee,
+    requester: ticket.requester,
     team: ticket.team,
     created: ticket.created,
   };
