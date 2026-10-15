@@ -2,12 +2,12 @@
  * OneServe API surface.
  *
  * Most methods call a `sosticket_*` RPC with `p_token`.
- * Files go through Azure (`uploadToAzure`); forgot-password mail goes through
+ * Files go through SharePoint; forgot-password mail goes through
  * the Power Automate edge function, not pg_net, so the nested payload matches
  * `email.toEmail` / `email.bodyHtml`.
  */
 import { getSessionToken } from "@/lib/session";
-import { uploadToAzure } from "@/lib/azureStorage";
+import { uploadToSharePoint } from "@/lib/sharepointStorage";
 import { sendForgotPasswordEmail } from "@/lib/testEmail";
 import { rpc } from "@/services/rpc";
 import type {
@@ -117,7 +117,7 @@ export const api = {
     });
   },
   registerAttachment(ticketId: string, fileName: string, filePath: string, fileSize?: number, mimeType?: string) {
-    // filePath is the Azure blob path returned by uploadToAzure, not a Supabase Storage key.
+    // filePath is a SharePoint item reference for new uploads.
     return rpc<TicketRecord>("sosticket_register_attachment", {
       p_token: tokenOrThrow(),
       p_ticket_id: ticketId,
@@ -128,8 +128,8 @@ export const api = {
     });
   },
   async uploadAttachment(ticketUuid: string, file: File) {
-    // Proxy through sosticket-azure-sas. Never PUT from the browser.
-    return uploadToAzure(ticketUuid, file);
+    // Proxy through sosticket-sharepoint-files. Never call Microsoft Graph from the browser.
+    return uploadToSharePoint(ticketUuid, file);
   },
   dashboard(projectId?: string | null) {
     return rpc<DashboardStats>("sosticket_dashboard_stats", {

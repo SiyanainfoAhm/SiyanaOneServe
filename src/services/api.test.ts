@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpcMock = vi.fn();
 const sendForgotPasswordEmail = vi.fn();
-const uploadToAzure = vi.fn();
+const uploadToSharePoint = vi.fn();
 const getSessionToken = vi.fn();
 
 vi.mock("@/services/rpc", () => ({
@@ -13,8 +13,8 @@ vi.mock("@/lib/testEmail", () => ({
   sendForgotPasswordEmail: (...args: unknown[]) => sendForgotPasswordEmail(...args),
 }));
 
-vi.mock("@/lib/azureStorage", () => ({
-  uploadToAzure: (...args: unknown[]) => uploadToAzure(...args),
+vi.mock("@/lib/sharepointStorage", () => ({
+  uploadToSharePoint: (...args: unknown[]) => uploadToSharePoint(...args),
 }));
 
 vi.mock("@/lib/session", () => ({
@@ -38,7 +38,7 @@ describe("api", () => {
   beforeEach(() => {
     rpcMock.mockReset();
     sendForgotPasswordEmail.mockReset();
-    uploadToAzure.mockReset();
+    uploadToSharePoint.mockReset();
     getSessionToken.mockReset();
     getSessionToken.mockReturnValue("session-token");
   });
@@ -80,17 +80,17 @@ describe("api", () => {
     expect(rpcMock).not.toHaveBeenCalled();
   });
 
-  it("uploads files through Azure then registers the blob path separately", async () => {
-    uploadToAzure.mockResolvedValue("siyanaoneserve/images/ticket-uuid/file.png");
+  it("uploads files through SharePoint then registers the item reference separately", async () => {
+    uploadToSharePoint.mockResolvedValue("sharepoint:item-123");
     await expect(api.uploadAttachment("ticket-uuid", new File(["x"], "file.png"))).resolves.toBe(
-      "siyanaoneserve/images/ticket-uuid/file.png",
+      "sharepoint:item-123",
     );
-    await api.registerAttachment("CCSHAU-2026-00001", "file.png", "siyanaoneserve/images/ticket-uuid/file.png", 12, "image/png");
+    await api.registerAttachment("CCSHAU-2026-00001", "file.png", "sharepoint:item-123", 12, "image/png");
     expect(rpcMock).toHaveBeenCalledWith("sosticket_register_attachment", {
       p_token: "session-token",
       p_ticket_id: "CCSHAU-2026-00001",
       p_file_name: "file.png",
-      p_file_path: "siyanaoneserve/images/ticket-uuid/file.png",
+      p_file_path: "sharepoint:item-123",
       p_file_size: 12,
       p_mime_type: "image/png",
     });

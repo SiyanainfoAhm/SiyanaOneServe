@@ -3,7 +3,7 @@
  *
  * Latest design: org/project from the account, then details, optional files,
  * required notes, and a locked-after-submit priority. Status starts at New.
- * Files upload to Azure only after the ticket UUID exists.
+ * Files upload to SharePoint only after the ticket UUID exists.
  */
 import { useMemo, useState } from "react";
 import Card from "@/components/base/Card";

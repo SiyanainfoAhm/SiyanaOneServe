@@ -1,9 +1,10 @@
 /**
- * Lists ticket files and opens them via a short-lived Azure read SAS.
+ * Lists ticket files and opens them via a short-lived SharePoint download URL.
  */
 import { useState } from "react";
 import Button from "@/components/base/Button";
 import { azureDownloadUrl } from "@/lib/azureStorage";
+import { sharePointDownloadBlob } from "@/lib/sharepointStorage";
 
 export interface AttachmentItem {
   id: string;
@@ -22,9 +23,29 @@ const FILE_ICON: Record<string, string> = {
 };
 
 async function downloadAttachment(file: AttachmentItem) {
-  if (!file.filePath) throw new Error("This file has no Azure path.");
+  if (!file.filePath) throw new Error("This file has no storage reference.");
+  if (file.filePath.startsWith("sharepoint:")) {
+    const blob = await sharePointDownloadBlob(file.filePath);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name || "attachment";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return;
+  }
   const url = await azureDownloadUrl(file.filePath);
-  window.open(url, "_blank", "noopener,noreferrer");
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name || "attachment";
+  link.rel = "noopener";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 interface AttachmentListProps {
