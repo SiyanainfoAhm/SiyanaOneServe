@@ -1,5 +1,5 @@
 /**
- * Drag-and-drop file picker. Bytes go to Azure only after the parent calls uploadToAzure.
+ * Drag-and-drop file picker. Bytes go to SharePoint only after the parent starts the upload.
  */
 import { useRef, useState } from "react";
 

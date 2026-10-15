@@ -1,6 +1,6 @@
 /**
  * Add-files control on workbench and client request detail.
- * Dropped or browsed files upload to Azure immediately, then persist via
+ * Dropped or browsed files upload to SharePoint immediately, then persist via
  * sosticket_register_attachment.
  */
 import { useState } from "react";
@@ -46,7 +46,7 @@ export default function TicketAttachments({
       }
       if (latest) onChange(latest);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to upload to Azure Storage.");
+      setError(err instanceof Error ? err.message : "Unable to upload to SharePoint.");
     } finally {
       setBusy(false);
     }
@@ -67,8 +67,8 @@ export default function TicketAttachments({
           ) : (
             <p className="text-[11px] text-foreground-500">
               {busy
-                ? "Uploading to Azure…"
-                : "Files upload to Azure automatically when you add them."}
+                ? "Uploading to SharePoint…"
+                : "Files upload to SharePoint automatically when you add them."}
             </p>
           )}
         </>
