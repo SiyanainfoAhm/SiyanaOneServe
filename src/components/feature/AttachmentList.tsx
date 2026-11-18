@@ -18,6 +18,7 @@ const FILE_ICON: Record<string, string> = {
   PDF: "ri-file-pdf-2-line",
   DOCX: "ri-file-word-2-line",
   XLSX: "ri-file-excel-2-line",
+  ZIP: "ri-file-zip-line",
   Image: "ri-image-line",
   Log: "ri-file-code-line",
 };
