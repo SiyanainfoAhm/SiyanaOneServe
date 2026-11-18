@@ -12,8 +12,8 @@ export interface UploadFile {
   byteSize?: number;
 }
 
-const ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp4";
-const EXT_ALLOWED = ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "mp4"];
+const ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.mp4,application/zip,application/x-zip-compressed";
+const EXT_ALLOWED = ["pdf", "doc", "docx", "xls", "xlsx", "zip", "png", "jpg", "jpeg", "mp4"];
 
 const FILE_ICON: Record<string, string> = {
   pdf: "ri-file-pdf-2-line",
@@ -21,6 +21,7 @@ const FILE_ICON: Record<string, string> = {
   docx: "ri-file-word-2-line",
   xls: "ri-file-excel-2-line",
   xlsx: "ri-file-excel-2-line",
+  zip: "ri-file-zip-line",
   png: "ri-image-line",
   jpg: "ri-image-line",
   jpeg: "ri-image-line",
@@ -98,7 +99,7 @@ export default function AttachmentDropzone({
           Drag and drop files here, or <span className="text-primary-700">browse</span>
         </p>
         <p className="mt-1 text-[11px] text-foreground-500">
-          Supported: PDF, DOCX, XLSX, images and video · up to 25 MB each
+          Supported: PDF, DOCX, XLSX, ZIP, images and video · up to 25 MB each
         </p>
         <input
           ref={inputRef}
